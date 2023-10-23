@@ -1,0 +1,569 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description/>
+ <version/>
+ <category>pymacros</category>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>true</autorun>
+ <autorun-early>false</autorun-early>
+ <priority>0</priority>
+ <shortcut/>
+ <show-in-menu>false</show-in-menu>
+ <group-name/>
+ <menu-path/>
+ <interpreter>python</interpreter>
+ <dsl-interpreter-name/>
+ <text>import pya
+import math
+
+
+"""
+This sample PCell implements a library called "MyLib" with a single PCell that
+draws a Siemens_star. It demonstrates the basic implementation techniques for a PCell 
+and how to use the "guiding shape" feature to implement a handle for the Siemens_star
+radius.
+
+NOTE: after changing the code, the macro needs to be rerun to install the new
+implementation. The macro is also set to "auto run" to install the PCell 
+when KLayout is run.
+"""
+
+  
+def produceSiemens_star(layout, n, ru):
+    # This is the main part of the implementation: create the layout
+    verts  = n * 2
+    # compute the Siemens_star
+    da = math.pi * 2 / verts
+    #pts = [ pya.DPoint(self.ru * math.cos(i * da), self.ru * math.sin(i * da)) for i in range(0, self.n) ]
+    pts = []
+    for i in range(0, verts):
+      if i % 2 == 0:
+        pts.append( pya.DPoint(0, 0))
+      else:
+        pts.append( pya.DPoint(ru * math.cos(i * da), ru * math.sin(i * da)))
+        pts.append( pya.DPoint(ru * math.cos((i + 1) * da), ru * math.sin((i + 1) * da)))
+    # create the shape
+    layout.insert(pya.DPolygon(pts))
+
+class Siemens_star(pya.PCellDeclarationHelper):
+  """
+  The PCell declaration for the Siemens_star
+  """
+
+  def __init__(self):
+
+    # Important: initialize the super class
+    super(Siemens_star, self).__init__()
+
+    # declare the parameters
+    self.param("l", self.TypeLayer, "Layer")
+    self.param("s", self.TypeShape, "", default = pya.DPoint(0, 0))
+    self.param("r", self.TypeDouble, "Radius", default = 100)
+    self.param("n", self.TypeInt, "Number of triangles", default = 32)     
+    # this hidden parameter is used to determine whether the radius has changed
+    # or the "s" handle has been moved
+    self.param("ru", self.TypeDouble, "Radius", default = 0.0, hidden = True)
+    self.param("rd", self.TypeDouble, "Double radius", readonly = True)
+
+  def display_text_impl(self):
+    # Provide a descriptive text for the cell
+    return "Siemens_star(L=" + str(self.l) + ",R=" + ('%.3f' % self.r) + ")"
+  
+  def coerce_parameters_impl(self):
+  
+    # We employ coerce_parameters_impl to decide whether the handle or the 
+    # numeric parameter has changed (by comparing against the effective 
+    # radius ru) and set ru to the effective radius. We also update the 
+    # numerical value or the shape, depending on which on has not changed.
+    rs = None
+    if isinstance(self.s, pya.DPoint): 
+      # compute distance in micron
+      rs = self.s.distance(pya.DPoint(0, 0))
+    if rs != None and abs(self.r-self.ru) &lt; 1e-6:
+      self.ru = rs
+      self.r = rs 
+    else:
+      self.ru = self.r
+      self.s = pya.DPoint(-self.r, 0)
+    
+    self.rd = 2*self.r
+  
+  def can_create_from_shape_impl(self):
+    # Implement the "Create PCell from shape" protocol: we can use any shape which 
+    # has a finite bounding box
+    return self.shape.is_box() or self.shape.is_polygon() or self.shape.is_path()
+  
+  def parameters_from_shape_impl(self):
+    # Implement the "Create PCell from shape" protocol: we set r and l from the shape's 
+    # bounding box width and layer
+    self.r = self.shape.bbox().width() * self.layout.dbu / 2
+    self.l = self.layout.get_info(self.layer)
+  
+  def transformation_from_shape_impl(self):
+    # Implement the "Create PCell from shape" protocol: we use the center of the shape's
+    # bounding box to determine the transformation
+    return pya.Trans(self.shape.bbox().center())
+  
+  def produce_impl(self):
+    layout = self.cell.shapes(self.l_layer)
+    produceSiemens_star(layout, self.n, self.ru)
+
+
+
+class Spiral(pya.PCellDeclarationHelper):
+  """
+  The PCell declaration for a spiral
+  """
+
+  def __init__(self):
+
+    # Important: initialize the super class
+    super(Spiral, self).__init__()
+
+    # declare the parameters
+    self.param("l", self.TypeLayer, "Layer")
+    self.param("n", self.TypeInt, "Number of points", default = 64)  
+    self.param("inner_r", self.TypeDouble, "Inner Radius", default = 10)	
+    self.param("outer_r", self.TypeDouble, "Outer Radius", default = 100)
+    self.param("width", self.TypeDouble, "Width", default = 10)
+    self.param("spacing", self.TypeDouble, "Spacing", default = 10)
+    self.param("inner_handle", self.TypeDouble, "Inner handle", default = pya.DPoint(0,0))	
+    self.param("outer_handle", self.TypeDouble, "Outer handle", default = pya.DPoint(0,0))   
+    # this hidden parameter is used to determine whether the radius has changed
+    # or the "s" handle has been moved
+    self.param("inner_mem", self.TypeDouble, "Inner_mem", default = 0.0, hidden = True)
+    self.param("outer_mem", self.TypeDouble, "outer_mem", default = 0.0, hidden = True)
+  def display_text_impl(self):
+    # Provide a descriptive text for the cell
+    return "Spiral(L=" + str(self.l) + ",Outer radius=" + ('%.3f' % self.outer_r) + ")"
+  
+
+  
+  def can_create_from_shape_impl(self):
+    # Implement the "Create PCell from shape" protocol: we can use any shape which 
+    # has a finite bounding box
+    return self.shape.is_box() or self.shape.is_polygon() or self.shape.is_path()
+  
+  def parameters_from_shape_impl(self):
+    # Implement the "Create PCell from shape" protocol: we set r and l from the shape's 
+    # bounding box width and layer
+    self.inner_r = self.shape.bbox().width() * self.layout.dbu / 4
+    self.outer_r = self.shape.bbox().width() * self.layout.dbu / 2   
+    self.l = self.layout.get_info(self.layer)
+  
+  def transformation_from_shape_impl(self):
+    # Implement the "Create PCell from shape" protocol: we use the center of the shape's
+    # bounding box to determine the transformation
+    return pya.Trans(self.shape.bbox().center())
+  
+  def produce_impl(self):
+  
+    # This is the main part of the implementation: create the layout
+    #fetch parameters
+    inner_r_dbu = self.inner_r / self.layout.dbu
+    outer_r_dbu = self.outer_r / self.layout.dbu
+    # compute the circle
+    pts = []
+    da = math.pi * 2 / self.n
+    dr = (self.width + self.spacing)/self.n/self.layout.dbu
+    current_radius = inner_r_dbu
+    current_angle = 0
+    while current_radius &lt; outer_r_dbu:
+      pts.append(pya.Point.from_dpoint(pya.DPoint(current_radius * math.cos(current_angle) , current_radius * math.sin(current_angle))))
+      current_radius += dr
+      current_angle = (current_angle + da)%(math.pi*2)
+    # create the shape
+    self.cell.shapes(self.l_layer).insert(pya.Path(pts,self.width/self.layout.dbu))
+    
+class Lines(pya.PCellDeclarationHelper):
+  """
+  The PCell declaration for the Lines
+  """
+
+  def __init__(self):
+
+    # Important: initialize the super class
+    super(Lines, self).__init__()
+
+    # declare the parameters
+    self.param("l", self.TypeLayer, "Layer")
+    self.param("s", self.TypeShape, "", default = pya.DPoint(0, 0))
+    self.param("h", self.TypeDouble, "Height", default = 100)
+    self.param("w0", self.TypeDouble, "Initial Width", default = 10)
+    self.param("dw", self.TypeDouble, "Change in width", default = 0)
+    self.param("d0", self.TypeDouble, "Initial Spacing", default = 100)
+    self.param("dd", self.TypeDouble, "Change in spacing", default = 0)
+    self.param("n", self.TypeInt, "Number of lines", default = 10)     
+    # this hidden parameter is used to determine whether the radius has changed
+    # or the "s" handle has been moved
+    self.param("ru", self.TypeDouble, "Radius", default = 0.0, hidden = True)
+    self.param("rd", self.TypeDouble, "Double radius", readonly = True)
+
+  def display_text_impl(self):
+    # Provide a descriptive text for the cell
+    return "Lines(L=" + str(self.l) + ",H=" + ('%.3f' % self.h) + ")"
+
+  def produce_impl(self):
+  
+    # This is the main part of the implementation: create the layout
+    x = 0
+    d0 = self.d0
+    dd = self.dd 
+    d = d0
+    h = self.h
+    w = self.w0
+    dw = self.dw
+    for i in range(0, self.n):
+      self.cell.shapes(self.l_layer).insert(pya.DBox(x, 0, w + x ,h))
+      x = x + d + w
+      d = d + dd 
+      
+      w = w + dw
+
+class Ruler(pya.PCellDeclarationHelper):
+  """
+  The PCell declaration for the Ruler
+  """
+
+  def __init__(self):
+
+    # Important: initialize the super class
+    super(Ruler, self).__init__()
+
+    # declare the parameters
+    self.param("l", self.TypeLayer, "Layer")
+    self.param("s", self.TypeShape, "", default = pya.DPoint(0, 0))
+    self.param("th", self.TypeDouble, "Tooth Height", default = 50)
+    self.param("tw", self.TypeDouble, "Tooth Width", default = 10)
+    self.param("lw", self.TypeDouble, "Line Width", default = 10)
+    self.param("length", self.TypeDouble, "Length", default = 1000)
+    self.param("d", self.TypeDouble, "Spacing", default = 100)
+    self.param("major", self.TypeInt, "Major ticks", default = 5)
+         
+    # this hidden parameter is used to determine whether the radius has changed
+    # or the "s" handle has been moved
+  def display_text_impl(self):
+    # Provide a descriptive text for the cell
+    return "Ruler(L-=" + str(self.l) + ",Lenth=" + ('%.3f' % self.length) + ")"
+  
+  
+  def can_create_from_shape_impl(self):
+    # Implement the "Create PCell from shape" protocol: we can use any shape which 
+    # has a finite bounding box
+    return self.shape.is_box() or self.shape.is_polygon() or self.shape.is_path()
+  
+  def parameters_from_shape_impl(self):
+    # Implement the "Create PCell from shape" protocol: we set r and l from the shape's 
+    # bounding box width and layer
+    self.length = self.shape.bbox().width() * self.layout.dbu 
+    self.l = self.layout.get_info(self.layer)
+  
+  def transformation_from_shape_impl(self):
+    # Implement the "Create PCell from shape" protocol: we use the center of the shape's
+    # bounding box to determine the transformation
+    return pya.Trans(self.shape.bbox().center())
+  
+  def produce_impl(self):
+  
+    # This is the main part of the implementation: create the layout
+    #rotate 90
+    t = pya.DTrans(1)
+    polygon = Produce_Ruler( self.th, self.tw, self.lw,self.length,self.d,self.major)
+    shapes = self.cell.shapes(self.l_layer)
+    shapes.insert(polygon.transform(t))
+    
+    
+    
+def Produce_Ruler(th, tw, lw,length,d,major):
+  
+  n_teeth = int(length / d)
+  x0 = - (length + d)/2
+  x = x0
+  pts = []
+  pts.append(pya.DPoint(x0, 0))
+  pts.append(pya.DPoint(x0, lw))
+  for i in range(0, n_teeth):
+    x = x + d 
+    pts.append(pya.DPoint(x - tw/2, lw))
+    if i % major == 0:
+      pts.append(pya.DPoint(x - tw/2, lw + th * 2))
+      pts.append(pya.DPoint(x + tw - tw/2, lw + th * 2))  
+    else:
+      pts.append(pya.DPoint(x - tw/2, lw + th))
+      pts.append(pya.DPoint(x + tw - tw/2, lw + th))
+    pts.append(pya.DPoint(x + tw - tw/2, lw))
+  pts.append(pya.DPoint(x + d, lw))
+  pts.append(pya.DPoint(x + d, 0))
+
+  return pya.DSimplePolygon(pts)
+  
+def Produce_Align(shapes,a,b,c):
+  t = pya.DTrans(1)
+  pts = []
+  pts.append(pya.DPoint(0, 0)) 
+  pts.append(pya.DPoint(c, a/2))
+  pts.append(pya.DPoint(c + b, a/2))
+  pts.append(pya.DPoint(c + b, -a/2))
+  pts.append(pya.DPoint(c, -a/2))
+  
+  # create the shape
+  for j in range(3):
+    for i in range(len(pts)-5, len(pts)):
+      pts.append(pts[i] *t)
+    
+  return pya.DSimplePolygon(pts)
+  
+  
+class Align_default(pya.PCellDeclarationHelper):
+  """
+  The PCell declaration for the Siemens_star
+  """
+
+  def __init__(self):
+
+    # Important: initialize the super class
+    super(Align_default, self).__init__()
+
+    # declare the parameters
+    self.param("l", self.TypeLayer, "Layer")
+    self.param("s", self.TypeShape, "", default = pya.DPoint(0, 0))
+    self.param("obj", self.TypeInt, "Objective", choices = [ [ "0.5x", 0 ], [ "1x", 1 ], [ "2.5x", 2 ], [ "5x", 3 ], [ "10x", 4 ] ], default = 0)
+
+  def display_text_impl(self):
+    # Provide a descriptive text for the cell
+    
+    objname = [ "0.5x","1x","2.5x","5x","10x"]
+    return "Align(L=" + str(self.l) + ", obj = " + objname[self.obj] + ")"
+
+  def produce_impl(self):
+    obj = self.obj 
+    A = [250, 140, 50, 25, 15]
+    B = [2000, 1000, 400, 200, 100]
+    C = [1000, 500, 200, 100, 50]
+    
+    shapes = self.cell.shapes(self.l_layer)
+    polygon = Produce_Align(shapes,A[obj],B[obj],C[obj])
+    shapes.insert(polygon)
+    
+    
+def ProduceVernier(shapes, spacing, width, height, n, transform, mark_center):
+  x = - (spacing*(n-1) + width)/2 
+  for i in range(n):
+    box = pya.DBox(x, -height/2, x + width ,height/2)
+    x = x + spacing
+    shapes.insert(box.transformed(transform))
+  
+  if (mark_center and n % 2 &gt; 0):
+    shapes.insert(pya.DBox(-width/2, -(height + width) , width/2, -(height/2 + width) ).transformed(transform))
+    
+    
+class Vernier(pya.PCellDeclarationHelper):
+  """
+  The PCell declaration for the Vernier
+  """
+
+  def __init__(self):
+
+    # Important: initialize the super class
+    super(Vernier, self).__init__()
+
+    # declare the parameters
+    self.param("l", self.TypeLayer, "Layer")
+    self.param("l2", self.TypeLayer, "Layer 2")
+    self.param("s", self.TypeShape, "", default = pya.DPoint(0, 0))
+    self.param("height", self.TypeDouble, "Height", default = 100)
+    self.param("width", self.TypeDouble, "Width", default = 20)
+    self.param("MSD", self.TypeDouble, "Main scale division", default = 100)
+    self.param("LC", self.TypeDouble, "Least count", default = 10)
+    self.param("overlap", self.TypeDouble, "Overlap", default = 20)
+    self.param("offset", self.TypeDouble, "Offset", default = 0)
+    self.param("n", self.TypeInt, "Number", default = 11)  
+    self.param("mark_center", self.TypeBoolean, "Mark Center", default = True)  
+
+
+  def display_text_impl(self):
+    # Provide a descriptive text for the cell
+    return "Vernier(L=" + str(self.l) + ",MSD=" + ('%.3f' % self.MSD) + ")"
+
+  def produce_impl(self):
+    VC = self.MSD - self.LC
+    
+    shapes1 = self.cell.shapes(self.l_layer)
+    shapes2 = self.cell.shapes(self.l2_layer)
+    t1 = pya.DTrans(0,False, 0,0)
+    t2 = pya.DTrans(2,False, 0 ,self.offset + self.height - self.overlap)
+    ProduceVernier(shapes = shapes1, spacing = self.MSD,width =  self.width,height =  self.height ,n =  self.n, transform = t1,mark_center =  self.mark_center)
+    ProduceVernier(shapes = shapes2, spacing = VC,width =  self.width, height = self.height, n=  self.n, transform = t2,mark_center = self.mark_center)
+    
+def ProduceCross(shapes, line_width, width,transform =  pya.DTrans(0, False,0,0)):
+  t = pya.DTrans(1)
+  pts = []
+  pts.append(pya.DPoint(width/2, -line_width/2)) 
+  pts.append(pya.DPoint(width/2, line_width/2))
+  pts.append(pya.DPoint(line_width/2, line_width/2))
+  
+  # create the shape
+  for j in range(3):
+    for i in range(len(pts)-3, len(pts)):
+      pts.append(pts[i] *t)
+    
+  shapes.insert(pya.DSimplePolygon(pts).transformed(transform))
+  
+  
+def ProduceBracket(shapes, line_width, width,transform =  pya.DTrans(0, False,0,0)):
+  gap = line_width
+  t = pya.DTrans(1)
+  pts = []
+  pts.append(pya.DPoint(line_width/2 + gap, line_width/2 + gap)) 
+  pts.append(pya.DPoint(width/2, line_width/2 + gap))
+  pts.append(pya.DPoint(width/2, line_width + gap))
+  pts.append(pya.DPoint(line_width + gap, line_width + gap)) 
+  pts.append(pya.DPoint( line_width + gap, width/2))
+  pts.append(pya.DPoint(line_width/2 + gap, width/2))
+  corner = pya.DSimplePolygon(pts)
+  # create the shape
+  for j in range(4):
+    shapes.insert(corner.transformed(transform))
+    corner = corner.transformed(t)
+  
+  
+  
+class VernierAlign(pya.PCellDeclarationHelper):
+  """
+  The PCell declaration for the Vernier
+  """
+
+  def __init__(self):
+
+    # Important: initialize the super class
+    super(VernierAlign, self).__init__()
+
+    # declare the parameters
+    self.param("l", self.TypeLayer, "Main scale layer")
+    self.param("l2", self.TypeLayer, "Vernier scale layer")
+    self.param("s", self.TypeShape, "", default = pya.DPoint(0, 0))
+    self.param("height", self.TypeDouble, "Height", default = 100)
+    self.param("line_width", self.TypeDouble, "line width", default = 20)
+    self.param("width", self.TypeDouble, "width", default = 1100, hidden = True)
+    self.param("MSD", self.TypeDouble, "Main scale division", default = 100)
+    self.param("LC", self.TypeDouble, "Least count", default = 10)
+    self.param("overlap", self.TypeDouble, "Overlap", default = 20)
+    self.param("n", self.TypeInt, "Number", default = 11)  
+    self.param("mark_center", self.TypeBoolean, "Mark Center", default = True)  
+    
+
+
+  def display_text_impl(self):
+    # Provide a descriptive text for the cell
+    return "VernierAlign(L=" + str(self.l) + ",MSD=" + ('%.0f' % self.MSD) + ",LC=" + ('%.0f' % (self.LC)) +  ")"
+
+  def produce_impl(self):
+    VC = self.MSD - self.LC
+    width = (self.n + 2) * self.MSD 
+    shapes1 = self.cell.shapes(self.l_layer)
+    shapes2 = self.cell.shapes(self.l2_layer)
+    rotate = pya.DTrans(1,False, 0,0)
+    
+    t1 =  pya.DTrans(0,False, 0,-width/2)
+    t2 = pya.DTrans(2,False, 0 ,-width/2 + self.height - self.overlap)
+    #side 1
+    
+    for i in range(4):
+      ProduceVernier(shapes = shapes1, spacing = self.MSD,width =  self.line_width,height =  self.height ,n =  self.n, transform = t1,mark_center =  self.mark_center)
+      ProduceVernier(shapes = shapes2, spacing = VC,width =  self.line_width,height =  self.height ,n =  self.n, transform = t2,mark_center =  self.mark_center)
+      t1 = rotate * t1
+      t2 = rotate * t2
+    
+    ProduceBracket(shapes = shapes1, line_width = self.line_width, width = 2*self.height)
+    ProduceCross(shapes = shapes2, line_width = self.line_width, width = 2*self.height)
+    
+      
+class HallBar(pya.PCellDeclarationHelper):
+  """
+  The PCell declaration for the Vernier
+  """
+
+  def __init__(self):
+
+    # Important: initialize the super class
+    super(HallBar, self).__init__()
+
+    # declare the parameters
+    self.param("l", self.TypeLayer, "Layer")
+    self.param("l2", self.TypeLayer, "Layer 2")
+    self.param("s", self.TypeShape, "", default = pya.DPoint(0, 0))
+    self.param("bar_gap", self.TypeDouble, "Gap between contacts", default = 300)
+    self.param("contact_length", self.TypeDouble, "line width", default = 200)
+    self.param("contact_width", self.TypeDouble, "width", default = 100)
+    self.param("n_side_contacts", self.TypeInt, "Number of side contacts", default = 4)  
+
+
+  def display_text_impl(self):
+    # Provide a descriptive text for the cell
+    return "HallBar(L=" + str(self.l) + ",Gap=" + ('%.3f' % self.bar_gap) + ")"
+
+  def produce_impl(self):
+    shapes1 = self.cell.shapes(self.l_layer)
+    ProduceHallbar(shapes = shapes1 ,bar_gap = self.bar_gap, contact_length = self.contact_length, contact_width = self.contact_width , n_side_contacts = self.n_side_contacts)
+      
+      
+def ProduceHallbar(shapes ,bar_gap, contact_length, contact_width,transform =  pya.DTrans(0, False,0,0), n_side_contacts = 4):
+  mirror = pya.DTrans(0,True, 0,0)
+  rotate = pya.DTrans(2,False, 0,0)
+  #layout the points of teh first corner of the hall bar
+  pts = []
+  #Center point
+  pts.append(pya.DPoint(0,- contact_width/2))
+  pts.append(pya.DPoint(bar_gap/2,- contact_width/2)) 
+  pts.append(pya.DPoint(bar_gap/2,- (contact_width/2 + contact_length))) 
+  pts.append(pya.DPoint(bar_gap/2 + contact_width, -(contact_width/2 + contact_length)))
+  pts.append(pya.DPoint(bar_gap/2 + contact_width,- (contact_width/2))) 
+  #End contact
+  pts.append(pya.DPoint(bar_gap/2 + contact_width + contact_length,- (contact_width/2)))
+  
+  #Mirror thes points across the x axis to create right half of the hall bar
+  for i in reversed(range(len(pts))):
+    pts.append(pts[i] *mirror)
+  # Rotate the shape by 180 to get the left half
+  for i in range(len(pts)):
+    pts.append(pts[i] * rotate)
+  corner = pya.DSimplePolygon(pts)
+  shapes.insert(corner.transformed(transform)) 
+    
+    
+    
+    
+    
+
+class MyLib(pya.Library):
+  """
+  The library where we will put the PCell into 
+  """
+
+  def __init__(self):
+  
+    # Set the description
+    self.description = "Nanomade Test patterns"
+    
+    # Create the PCell declarations
+    self.layout().register_pcell("Siemens_star", Siemens_star())
+    self.layout().register_pcell("Spiral", Spiral())
+    self.layout().register_pcell("Lines", Lines())
+    self.layout().register_pcell("Ruler", Ruler())
+    self.layout().register_pcell("Align_default", Align_default())
+    self.layout().register_pcell("Vernier", Vernier())
+    self.layout().register_pcell("VernierAlign", VernierAlign())
+    self.layout().register_pcell("HallBar", HallBar())
+    # That would be the place to put in more PCells ...
+    
+    # Register us with the name "MyLib".
+    # If a library with that name already existed, it will be replaced then.
+    self.register("TestLib")
+
+
+# Instantiate and register the library
+MyLib()
+</text>
+</klayout-macro>
