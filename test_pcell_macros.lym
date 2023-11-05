@@ -525,7 +525,7 @@ def ProduceHallbar(shapes ,bar_gap, contact_length, contact_width,transform =  p
   
   #Mirror thes points across the x axis to create right half of the hall bar
   for i in reversed(range(len(pts))):
-    pts.append(pts[i] *mirror)
+    pts.append(pts[i] * mirror)
   # Rotate the shape by 180 to get the left half
   for i in range(len(pts)):
     pts.append(pts[i] * rotate)
