@@ -510,30 +510,38 @@ class HallBar(pya.PCellDeclarationHelper):
     shapes1 = self.cell.shapes(self.l_layer)
     ProduceHallbar(shapes = shapes1 ,bar_gap = self.bar_gap, contact_length = self.contact_length, contact_width = self.contact_width , n_side_contacts = self.n_side_contacts)
       
-      
-def ProduceHallbar(shapes ,bar_gap, contact_length, contact_width, transform =  pya.DTrans(0, False,0,0), n_side_contacts = 4):
-  mirror = pya.DTrans(0,True, 0,0)
-  rotate = pya.DTrans(2,False, 0,0)
-  #layout the points of teh first corner of the hall bar
-  pts = []
-  #Center point
-  pts.append(pya.DPoint(0,- contact_width/2))
-  pts.append(pya.DPoint(bar_gap/2,- contact_width/2)) 
-  pts.append(pya.DPoint(bar_gap/2,- (contact_width/2 + contact_length))) 
-  pts.append(pya.DPoint(bar_gap/2 + contact_width, -(contact_width/2 + contact_length)))
-  pts.append(pya.DPoint(bar_gap/2 + contact_width,- (contact_width/2))) 
-  #End contact
-  pts.append(pya.DPoint(bar_gap/2 + contact_width + contact_length,- (contact_width/2)))
-  
-  #Mirror thes points across the x axis to create right half of the hall bar
-  for i in reversed(range(len(pts))):
-    pts.append(pts[i] * mirror)
-  # Rotate the shape by 180 to get the left half
-  for i in range(len(pts)):
-    pts.append(pts[i] * rotate)
-  corner = pya.DSimplePolygon(pts)
-  shapes.insert(corner.transformed(transform)) 
     
+
+def ProduceHallbar(shapes, bar_gap, contact_length, contact_width, transform=pya.DTrans(0, False, 0, 0), n_side_contacts=4):
+    # Define the points for the hall bar
+    hall_bar_points = [
+        pya.DPoint(0, -contact_width / 2),
+        pya.DPoint(bar_gap / 2, -contact_width / 2),
+        pya.DPoint(bar_gap / 2, -(contact_width / 2 + contact_length)),
+        pya.DPoint(bar_gap / 2 + contact_width, -(contact_width / 2 + contact_length)),
+        pya.DPoint(bar_gap / 2 + contact_width, -contact_width / 2),
+        pya.DPoint(bar_gap / 2 + contact_width + contact_length, -contact_width / 2)
+    ]
+    # Mirror the points to create the full symmetrical hall bar shape
+    hall_bar_mirrored_x = [pya.DPoint(point.x, -point.y) for point in reversed(hall_bar_points)]
+
+    # Combine the original and mirrored points to form the full hall bar shape
+    hall_bar_points += hall_bar_mirrored_x 
+    
+    # mirror on the y axis 
+    hall_bar_mirrored_y = [pya.DPoint(-point.x, point.y) for point in reversed(hall_bar_points)]
+    
+    # Combine the original and mirrored points to form the full hall bar shape
+    hall_bar_points += hall_bar_mirrored_y[1:]  # Exclude the first point (overlapping with the last point)
+
+    # Create the hall bar shape using all the points
+    hall_bar = pya.DSimplePolygon(hall_bar_points)
+    shapes.insert(hall_bar.transformed(transform))
+
+
+
+  
+
 
 class MyLib(pya.Library):
   """
