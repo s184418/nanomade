@@ -448,6 +448,7 @@ class VernierAlign(pya.PCellDeclarationHelper):
     self.param("line_width", self.TypeDouble, "line width", default = 20)
     self.param("width", self.TypeDouble, "width", default = 1100, hidden = True)
     self.param("MSD", self.TypeDouble, "Main scale division", default = 100)
+    # Least count is the resolution of the vernier scale
     self.param("LC", self.TypeDouble, "Least count", default = 10)
     self.param("overlap", self.TypeDouble, "Overlap", default = 20)
     self.param("n", self.TypeInt, "Number", default = 11)  
@@ -470,6 +471,7 @@ class VernierAlign(pya.PCellDeclarationHelper):
     t2 = pya.DTrans(2,False, 0 ,-width/2 + self.height - self.overlap)
     #side 1
     
+    #Produce each of the four sides and then rotate 90 deg to produce the next 
     for i in range(4):
       ProduceVernier(shapes = shapes1, spacing = self.MSD,width =  self.line_width,height =  self.height ,n =  self.n, transform = t1,mark_center =  self.mark_center)
       ProduceVernier(shapes = shapes2, spacing = VC,width =  self.line_width,height =  self.height ,n =  self.n, transform = t2,mark_center =  self.mark_center)
@@ -509,7 +511,7 @@ class HallBar(pya.PCellDeclarationHelper):
     ProduceHallbar(shapes = shapes1 ,bar_gap = self.bar_gap, contact_length = self.contact_length, contact_width = self.contact_width , n_side_contacts = self.n_side_contacts)
       
       
-def ProduceHallbar(shapes ,bar_gap, contact_length, contact_width,transform =  pya.DTrans(0, False,0,0), n_side_contacts = 4):
+def ProduceHallbar(shapes ,bar_gap, contact_length, contact_width, transform =  pya.DTrans(0, False,0,0), n_side_contacts = 4):
   mirror = pya.DTrans(0,True, 0,0)
   rotate = pya.DTrans(2,False, 0,0)
   #layout the points of teh first corner of the hall bar
@@ -531,10 +533,6 @@ def ProduceHallbar(shapes ,bar_gap, contact_length, contact_width,transform =  p
     pts.append(pts[i] * rotate)
   corner = pya.DSimplePolygon(pts)
   shapes.insert(corner.transformed(transform)) 
-    
-    
-    
-    
     
 
 class MyLib(pya.Library):
@@ -558,7 +556,7 @@ class MyLib(pya.Library):
     self.layout().register_pcell("HallBar", HallBar())
     # That would be the place to put in more PCells ...
     
-    # Register us with the name "MyLib".
+    # Register us with the name "TestLib".
     # If a library with that name already existed, it will be replaced then.
     self.register("TestLib")
 
