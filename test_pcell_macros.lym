@@ -31,20 +31,11 @@ when KLayout is run.
 """
 
   
-def produceSiemens_star(layout, n, ru):
-    # This is the main part of the implementation: create the layout
-    verts  = n * 2
-    # compute the Siemens_star
+def produce_siemens_star(layout, n, ru):
+    verts = n * 2
     da = math.pi * 2 / verts
-    #pts = [ pya.DPoint(self.ru * math.cos(i * da), self.ru * math.sin(i * da)) for i in range(0, self.n) ]
-    pts = []
-    for i in range(0, verts):
-      if i % 2 == 0:
-        pts.append( pya.DPoint(0, 0))
-      else:
-        pts.append( pya.DPoint(ru * math.cos(i * da), ru * math.sin(i * da)))
-        pts.append( pya.DPoint(ru * math.cos((i + 1) * da), ru * math.sin((i + 1) * da)))
-    # create the shape
+    pts = [pya.DPoint(0, 0) if i % 2 == 0 else pya.DPoint(ru * math.cos(i * da), ru * math.sin(i * da))
+           for i in range(verts)]
     layout.insert(pya.DPolygon(pts))
 
 class Siemens_star(pya.PCellDeclarationHelper):
@@ -388,45 +379,91 @@ class Vernier(pya.PCellDeclarationHelper):
     return "Vernier(L=" + str(self.l) + ",MSD=" + ('%.3f' % self.MSD) + ")"
 
   def produce_impl(self):
+    # calculate the vernier constant
     VC = self.MSD - self.LC
-    
     shapes1 = self.cell.shapes(self.l_layer)
     shapes2 = self.cell.shapes(self.l2_layer)
     t1 = pya.DTrans(0,False, 0,0)
     t2 = pya.DTrans(2,False, 0 ,self.offset + self.height - self.overlap)
+    
+    # instantite the the two scales 
     ProduceVernier(shapes = shapes1, spacing = self.MSD,width =  self.width,height =  self.height ,n =  self.n, transform = t1,mark_center =  self.mark_center)
     ProduceVernier(shapes = shapes2, spacing = VC,width =  self.width, height = self.height, n=  self.n, transform = t2,mark_center = self.mark_center)
     
-def ProduceCross(shapes, line_width, width,transform =  pya.DTrans(0, False,0,0)):
-  t = pya.DTrans(1)
-  pts = []
-  pts.append(pya.DPoint(width/2, -line_width/2)) 
-  pts.append(pya.DPoint(width/2, line_width/2))
-  pts.append(pya.DPoint(line_width/2, line_width/2))
-  
-  # create the shape
-  for j in range(3):
-    for i in range(len(pts)-3, len(pts)):
-      pts.append(pts[i] *t)
     
-  shapes.insert(pya.DSimplePolygon(pts).transformed(transform))
+    
+def ProduceCross(shapes, line_width, width, transform=pya.DTrans(0, False, 0, 0)):
+    """
+    Produce a cross shape and insert it into the specified shapes.
+
+    Parameters:
+    - shapes: The target shape container.
+    - line_width: The width of the cross lines.
+    - width: The overall width of the cross.
+    - transform: The transformation to be applied to the cross shape.
+
+    Returns:
+    None
+    """
+    half_line_width = line_width / 2
+    half_width = width / 2
+
+    # Define the list of points for the perimeter of the cross shape
+    cross_points = [
+        pya.DPoint(half_width, -half_line_width),  # Top right
+        pya.DPoint(half_line_width, -half_line_width),  # Top right inner
+        pya.DPoint(half_line_width, -half_width),  # Top right inner
+        pya.DPoint(-half_line_width, -half_width),  # Top left inner
+        pya.DPoint(-half_line_width, -half_line_width),  # Top left inner
+        pya.DPoint(-half_width, -half_line_width),  # Top left
+        pya.DPoint(-half_width, half_line_width),   # Bottom left
+        pya.DPoint(-half_line_width, half_line_width),   # Bottom left inner
+        pya.DPoint(-half_line_width, half_width),  # Bottom left inner
+        pya.DPoint(half_line_width, half_width),  # Bottom right inner
+        pya.DPoint(half_line_width, half_line_width),  # Bottom right inner
+        pya.DPoint(half_width, half_line_width),   # Bottom right
+    ]
+
+    # Create the cross shape using the list of points
+    cross_shape = pya.DSimplePolygon(cross_points)
+
+    # Insert the cross shape into the specified shapes with the provided transformation
+    shapes.insert(cross_shape.transformed(transform))
   
-  
-def ProduceBracket(shapes, line_width, width,transform =  pya.DTrans(0, False,0,0)):
-  gap = line_width
-  t = pya.DTrans(1)
-  pts = []
-  pts.append(pya.DPoint(line_width/2 + gap, line_width/2 + gap)) 
-  pts.append(pya.DPoint(width/2, line_width/2 + gap))
-  pts.append(pya.DPoint(width/2, line_width + gap))
-  pts.append(pya.DPoint(line_width + gap, line_width + gap)) 
-  pts.append(pya.DPoint( line_width + gap, width/2))
-  pts.append(pya.DPoint(line_width/2 + gap, width/2))
-  corner = pya.DSimplePolygon(pts)
-  # create the shape
-  for j in range(4):
-    shapes.insert(corner.transformed(transform))
-    corner = corner.transformed(t)
+def ProduceBracket(shapes, line_width, width, transform=pya.DTrans(0, False, 0, 0)):
+    """
+    Produce a bracket shape and insert it into the specified shapes.
+
+    Parameters:
+    - shapes: The target shape container.
+    - line_width: The width of the bracket lines.
+    - width: The overall width of the bracket.
+    - transform: The transformation to be applied to the bracket shape.
+
+    Returns:
+    None
+    """
+    gap = line_width
+    t = pya.DTrans(1)
+
+    # Define the bracket points
+    bracket_points = [
+        pya.DPoint(line_width / 2 + gap, line_width / 2 + gap),
+        pya.DPoint(width / 2, line_width / 2 + gap),
+        pya.DPoint(width / 2, line_width + gap),
+        pya.DPoint(line_width + gap, line_width + gap),
+        pya.DPoint(line_width + gap, width / 2),
+        pya.DPoint(line_width / 2 + gap, width / 2),
+    ]
+
+    # Create the bracket shape
+    bracket_shape = pya.DSimplePolygon(bracket_points)
+
+    # Insert the bracket shape into the specified shapes with the provided transformation
+    for _ in range(4):
+        shapes.insert(bracket_shape.transformed(transform))
+        bracket_shape = bracket_shape.transformed(t)
+
   
   
   
@@ -472,7 +509,7 @@ class VernierAlign(pya.PCellDeclarationHelper):
     #side 1
     
     #Produce each of the four sides and then rotate 90 deg to produce the next 
-    for i in range(4):
+    for _ in range(4):
       ProduceVernier(shapes = shapes1, spacing = self.MSD,width =  self.line_width,height =  self.height ,n =  self.n, transform = t1,mark_center =  self.mark_center)
       ProduceVernier(shapes = shapes2, spacing = VC,width =  self.line_width,height =  self.height ,n =  self.n, transform = t2,mark_center =  self.mark_center)
       t1 = rotate * t1
