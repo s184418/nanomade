@@ -11,5 +11,5 @@ Patterns include:
 
 
 ## siemens star
-
+A resolution test that is comprised of n identical triangles spaced equidistant around a central point
 
