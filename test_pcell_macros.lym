@@ -18,6 +18,8 @@
  <text>import pya
 import math
 
+#Try install numpy on Polos PC ? 
+#import numpy as np
 
 """
 This sample PCell implements a library called "MyLib" with a single PCell that
@@ -32,10 +34,19 @@ when KLayout is run.
 
   
 def produce_siemens_star(layout, n, ru):
-    verts = n * 2
+    # This is the main part of the implementation: create the layout
+    verts  = n * 2
+    # compute the Siemens_star
     da = math.pi * 2 / verts
-    pts = [pya.DPoint(0, 0) if i % 2 == 0 else pya.DPoint(ru * math.cos(i * da), ru * math.sin(i * da))
-           for i in range(verts)]
+    #pts = [ pya.DPoint(self.ru * math.cos(i * da), self.ru * math.sin(i * da)) for i in range(0, self.n) ]
+    pts = []
+    for i in range(0, verts):
+      if i % 2 == 0:
+        pts.append( pya.DPoint(0, 0))
+      else:
+        pts.append( pya.DPoint(ru * math.cos(i * da), ru * math.sin(i * da)))
+        pts.append( pya.DPoint(ru * math.cos((i + 1) * da), ru * math.sin((i + 1) * da)))
+    # create the shape
     layout.insert(pya.DPolygon(pts))
 
 class Siemens_star(pya.PCellDeclarationHelper):
@@ -56,7 +67,7 @@ class Siemens_star(pya.PCellDeclarationHelper):
     # this hidden parameter is used to determine whether the radius has changed
     # or the "s" handle has been moved
     self.param("ru", self.TypeDouble, "Radius", default = 0.0, hidden = True)
-    self.param("rd", self.TypeDouble, "Double radius", readonly = True)
+    self.param("rd", self.TypeDouble, "Double radius", hidden = True)
 
   def display_text_impl(self):
     # Provide a descriptive text for the cell
@@ -99,7 +110,7 @@ class Siemens_star(pya.PCellDeclarationHelper):
   
   def produce_impl(self):
     layout = self.cell.shapes(self.l_layer)
-    produceSiemens_star(layout, self.n, self.ru)
+    produce_siemens_star(layout, self.n, self.ru)
 
 
 
@@ -318,9 +329,11 @@ class Align_default(pya.PCellDeclarationHelper):
     super(Align_default, self).__init__()
 
     # declare the parameters
-    self.param("l", self.TypeLayer, "Layer")
+    self.param("l", self.TypeLayer, "Layer 1")
     self.param("s", self.TypeShape, "", default = pya.DPoint(0, 0))
     self.param("obj", self.TypeInt, "Objective", choices = [ [ "0.5x", 0 ], [ "1x", 1 ], [ "2.5x", 2 ], [ "5x", 3 ], [ "10x", 4 ] ], default = 0)
+    self.param("vernier", self.TypeBoolean, "Add vernier", default = False)  
+    self.param("l2", self.TypeLayer, "Layer 2")
 
   def display_text_impl(self):
     # Provide a descriptive text for the cell
@@ -337,6 +350,17 @@ class Align_default(pya.PCellDeclarationHelper):
     shapes = self.cell.shapes(self.l_layer)
     polygon = Produce_Align(shapes,A[obj],B[obj],C[obj])
     shapes.insert(polygon)
+    
+    msd_list = [200,100,40,20,10]
+    lc_list = [20,10,4,2,1]
+    line_width_list = [40,20,8,4,2]
+    line_height_list = [200,100,40,20,10]
+    overlap_list = [100,50,20,10,5]
+    n_list = [11,11,11,11,11]
+    
+    if self.vernier:
+      produce_vernier_align(shapes1=self.cell.shapes(self.l_layer),shapes2=self.cell.shapes(self.l2_layer), msd=msd_list[obj], lc=lc_list[obj], line_width=line_width_list[obj], line_height=line_height_list[obj], overlap=overlap_list[obj], n = n_list[obj], mark_center=False)
+    
     
     
 def ProduceVernier(shapes, spacing, width, height, n, transform, mark_center):
@@ -466,7 +490,25 @@ def ProduceBracket(shapes, line_width, width, transform=pya.DTrans(0, False, 0, 
 
   
   
-  
+def produce_vernier_align(shapes1,shapes2, msd, lc, line_width, line_height, overlap, n, mark_center):
+    vc = msd - lc
+    width = (n + 2) * msd 
+    rotate = pya.DTrans(1,False, 0,0)
+    
+    t1 =  pya.DTrans(0,False, 0,-width/2)
+    t2 = pya.DTrans(2,False, 0 ,-width/2 + line_height - overlap)
+    #side 1
+    
+    #Produce each of the four sides and then rotate 90 deg to produce the next 
+    for _ in range(4):
+      ProduceVernier(shapes = shapes1, spacing = msd, width =  line_width,height =  line_height ,n = n, transform = t1,mark_center =  mark_center)
+      ProduceVernier(shapes = shapes2, spacing = vc, width =  line_width,height =  line_height ,n = n, transform = t2,mark_center =  mark_center)
+      t1 = rotate * t1
+      t2 = rotate * t2
+    if mark_center:
+      ProduceBracket(shapes = shapes1, line_width = line_width, width = 2*line_height)
+      ProduceCross(shapes = shapes2, line_width = line_width, width = 2*line_height)
+      
 class VernierAlign(pya.PCellDeclarationHelper):
   """
   The PCell declaration for the Vernier
@@ -481,44 +523,27 @@ class VernierAlign(pya.PCellDeclarationHelper):
     self.param("l", self.TypeLayer, "Main scale layer")
     self.param("l2", self.TypeLayer, "Vernier scale layer")
     self.param("s", self.TypeShape, "", default = pya.DPoint(0, 0))
-    self.param("height", self.TypeDouble, "Height", default = 100)
+    self.param("line_height", self.TypeDouble, "line height", default = 100)
     self.param("line_width", self.TypeDouble, "line width", default = 20)
     self.param("width", self.TypeDouble, "width", default = 1100, hidden = True)
-    self.param("MSD", self.TypeDouble, "Main scale division", default = 100)
+    self.param("msd", self.TypeDouble, "Main scale division", default = 100)
     # Least count is the resolution of the vernier scale
-    self.param("LC", self.TypeDouble, "Least count", default = 10)
+    self.param("lc", self.TypeDouble, "Least count", default = 10)
     self.param("overlap", self.TypeDouble, "Overlap", default = 20)
-    self.param("n", self.TypeInt, "Number", default = 11)  
+    self.param("n", self.TypeInt, "Number of markings", default = 11)  
     self.param("mark_center", self.TypeBoolean, "Mark Center", default = True)  
     
 
 
   def display_text_impl(self):
     # Provide a descriptive text for the cell
-    return "VernierAlign(L=" + str(self.l) + ",MSD=" + ('%.0f' % self.MSD) + ",LC=" + ('%.0f' % (self.LC)) +  ")"
+    return "Vernier Align(L=" + str(self.l) + ",MSD=" + ('%.0f' % self.msd) + ",LC=" + ('%.0f' % (self.lc)) +  ")"
 
   def produce_impl(self):
-    VC = self.MSD - self.LC
-    width = (self.n + 2) * self.MSD 
-    shapes1 = self.cell.shapes(self.l_layer)
-    shapes2 = self.cell.shapes(self.l2_layer)
-    rotate = pya.DTrans(1,False, 0,0)
+    produce_vernier_align(shapes1=self.cell.shapes(self.l_layer),shapes2=self.cell.shapes(self.l2_layer), msd=self.msd, lc=self.lc, line_width=self.line_width, line_height=self.line_height, overlap=self.overlap, n = self.n, mark_center=self.mark_center)
     
-    t1 =  pya.DTrans(0,False, 0,-width/2)
-    t2 = pya.DTrans(2,False, 0 ,-width/2 + self.height - self.overlap)
-    #side 1
-    
-    #Produce each of the four sides and then rotate 90 deg to produce the next 
-    for _ in range(4):
-      ProduceVernier(shapes = shapes1, spacing = self.MSD,width =  self.line_width,height =  self.height ,n =  self.n, transform = t1,mark_center =  self.mark_center)
-      ProduceVernier(shapes = shapes2, spacing = VC,width =  self.line_width,height =  self.height ,n =  self.n, transform = t2,mark_center =  self.mark_center)
-      t1 = rotate * t1
-      t2 = rotate * t2
-    
-    ProduceBracket(shapes = shapes1, line_width = self.line_width, width = 2*self.height)
-    ProduceCross(shapes = shapes2, line_width = self.line_width, width = 2*self.height)
-    
-      
+
+
 class HallBar(pya.PCellDeclarationHelper):
   """
   The PCell declaration for the Vernier
@@ -533,9 +558,11 @@ class HallBar(pya.PCellDeclarationHelper):
     self.param("l", self.TypeLayer, "Layer")
     self.param("l2", self.TypeLayer, "Layer 2")
     self.param("s", self.TypeShape, "", default = pya.DPoint(0, 0))
-    self.param("bar_gap", self.TypeDouble, "Gap between contacts", default = 300)
-    self.param("contact_length", self.TypeDouble, "line width", default = 200)
-    self.param("contact_width", self.TypeDouble, "width", default = 100)
+    self.param("bar_gap", self.TypeDouble, "Gap between side contacts", default = 300)
+    self.param("side_contact_length", self.TypeDouble, "Side contact length", default = 200)
+    self.param("side_contact_width", self.TypeDouble, "Side contact width", default = 100)
+    self.param("main_contact_length", self.TypeDouble, "Main contact length", default = 200)
+    self.param("main_contact_width", self.TypeDouble, "Main contact width", default = 100)
     self.param("n_side_contacts", self.TypeInt, "Number of side contacts", default = 4)  
 
 
@@ -545,40 +572,56 @@ class HallBar(pya.PCellDeclarationHelper):
 
   def produce_impl(self):
     shapes1 = self.cell.shapes(self.l_layer)
-    ProduceHallbar(shapes = shapes1 ,bar_gap = self.bar_gap, contact_length = self.contact_length, contact_width = self.contact_width , n_side_contacts = self.n_side_contacts)
+    ProduceHallbar(shapes = shapes1 ,bar_gap = self.bar_gap, side_contact_length = self.side_contact_length, side_contact_width = self.side_contact_width , main_contact_length = self.main_contact_length, main_contact_width = self.main_contact_width , n_side_contacts = self.n_side_contacts)
       
     
 
-def ProduceHallbar(shapes, bar_gap, contact_length, contact_width, transform=pya.DTrans(0, False, 0, 0), n_side_contacts=4):
+
+
+def ProduceHallbar(shapes, bar_gap, side_contact_length, side_contact_width, main_contact_length, main_contact_width, transform=pya.DTrans(0, False, 0, 0), n_side_contacts=4):
     # Define the points for the hall bar
-    hall_bar_points = [
-        pya.DPoint(0, -contact_width / 2),
-        pya.DPoint(bar_gap / 2, -contact_width / 2),
-        pya.DPoint(bar_gap / 2, -(contact_width / 2 + contact_length)),
-        pya.DPoint(bar_gap / 2 + contact_width, -(contact_width / 2 + contact_length)),
-        pya.DPoint(bar_gap / 2 + contact_width, -contact_width / 2),
-        pya.DPoint(bar_gap / 2 + contact_width + contact_length, -contact_width / 2)
-    ]
-    # Mirror the points to create the full symmetrical hall bar shape
-    hall_bar_mirrored_x = [pya.DPoint(point.x, -point.y) for point in reversed(hall_bar_points)]
-
-    # Combine the original and mirrored points to form the full hall bar shape
-    hall_bar_points += hall_bar_mirrored_x 
+    #define starting points (top left hand corner) such that the center of the structure will be a 0,0
+    x0 = - ( 2* main_contact_length  + bar_gap*(n_side_contacts/2 - 1) + side_contact_width*( n_side_contacts/2 ))/2 ; y0 = main_contact_width/2;
     
-    # mirror on the y axis 
-    hall_bar_mirrored_y = [pya.DPoint(-point.x, point.y) for point in reversed(hall_bar_points)]
+    x = [x0]
+    y = [y0]
     
-    # Combine the original and mirrored points to form the full hall bar shape
-    hall_bar_points += hall_bar_mirrored_y[1:]  # Exclude the first point (overlapping with the last point)
-
-    # Create the hall bar shape using all the points
-    hall_bar = pya.DSimplePolygon(hall_bar_points)
+    #define the points of the top trace of structure
+    for i in range(int(n_side_contacts/2)):
+      x_offset = x0 +  (bar_gap +  side_contact_width)* i + main_contact_length
+      
+      x.append(x_offset)
+      y.append(y0)
+      
+      x.append(x_offset)
+      y.append(y0 + side_contact_length)
+      
+      x.append(x_offset + side_contact_width)
+      y.append(y0 + side_contact_length)
+      
+      x.append(x_offset + side_contact_width)
+      y.append(y0)
+    
+    x.append(x_offset + side_contact_width + main_contact_length)
+    y.append(y0)
+    
+    #We then mirror the y points across the x-axis by multiplying them by -1 and reverse so that the list gose clockwise around the shape
+    
+    y2 = [-i for i in reversed(y)]
+    x2 = [i for i in reversed(x)]
+    
+    x += x2
+    y += y2
+    
+    #We then convert to dpoints
+    
+    pts = [pya.DPoint(x[i],y[i]) for i , xi in enumerate(x)]
+     
+    #We then add the two x and y lists together 
+      
+  # Create the hall bar shape using all the points
+    hall_bar = pya.DSimplePolygon(pts)
     shapes.insert(hall_bar.transformed(transform))
-
-
-
-  
-
 
 class MyLib(pya.Library):
   """
