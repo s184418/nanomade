@@ -330,7 +330,7 @@ def Produce_Align(shapes,a,b,c):
     for i in range(len(pts)-5, len(pts)):
       pts.append(pts[i] *t)
     
-  return pya.DSimplePolygon(pts)
+  shapes.insert(pya.DSimplePolygon(pts))
   
   
 class Align_default(pya.PCellDeclarationHelper):
@@ -349,7 +349,11 @@ class Align_default(pya.PCellDeclarationHelper):
     self.param("obj", self.TypeInt, "Objective", choices = [ [ "0.5x", 0 ], [ "1x", 1 ], [ "2.5x", 2 ], [ "5x", 3 ], [ "10x", 4 ] ], default = 0)
     self.param("vernier", self.TypeBoolean, "Add vernier", default = False)  
     self.param("l2", self.TypeLayer, "Layer 2")
-    self.param("label", self.TypeString, "Label", default = None)  
+    self.param("label", self.TypeString, "Label", default = None) 
+    
+    #Provide scaler value that assignes whet quadrent the label is in 
+    self.param("text_x", self.TypeDouble, "Label X", default = -0.8) 
+    self.param("text_y", self.TypeDouble, "Label Y", default = 0.8  ) 
 
   def display_text_impl(self):
     # Provide a descriptive text for the cell
@@ -365,8 +369,8 @@ class Align_default(pya.PCellDeclarationHelper):
     D = [40,20,9,5,2.2]
     
     shapes = self.cell.shapes(self.l_layer)
-    polygon = Produce_Align(shapes,A[obj],B[obj],C[obj])
-    shapes.insert(polygon)
+    Produce_Align(shapes,A[obj],B[obj],C[obj])
+    
     
     msd_list = [200,100,40,20,10]
     lc_list = [20,10,4,2,1]
@@ -375,7 +379,7 @@ class Align_default(pya.PCellDeclarationHelper):
     overlap_list = [100,50,20,10,5]
     #n_list = [21,21,21,21,21]
     if self.label is not None:
-      produce_text(shape = self.cell.shapes(self.l_layer), dbu = self.layout.dbu,  string = self.label, text_width = D[obj], x = - B[obj], y =  B[obj] )
+      produce_text(shape = self.cell.shapes(self.l_layer), dbu = self.layout.dbu,  string = self.label, text_width = D[obj], x = ( B[obj] + C[obj]) * self.text_x, y =  ( B[obj] + C[obj])*self.text_y )
       
     if self.vernier:
       n = math.ceil(1.2*2*(B[obj]+C[obj])/msd_list[obj]) // 2 * 2 + 1
