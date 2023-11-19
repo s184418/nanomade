@@ -31,9 +31,18 @@ NOTE: after changing the code, the macro needs to be rerun to install the new
 implementation. The macro is also set to "auto run" to install the PCell 
 when KLayout is run.
 """
+def produce_text(shape = None, dbu = 0.001, string = "missing text", text_width = 100, x = 0, y = 0):
+  #text_width: width of the text in um
+  if shape == None:
+    print("No shape provided") 
+    return
+  text = pya.TextGenerator.default_generator().text(string, dbu / text_width)
+  shape.insert(text)
 
+
+  #shapes.insert(region)
   
-def produce_siemens_star(layout, n, ru):
+def produce_siemens_star(shape, n, ru):
     # This is the main part of the implementation: create the layout
     verts  = n * 2
     # compute the Siemens_star
@@ -47,7 +56,7 @@ def produce_siemens_star(layout, n, ru):
         pts.append( pya.DPoint(ru * math.cos(i * da), ru * math.sin(i * da)))
         pts.append( pya.DPoint(ru * math.cos((i + 1) * da), ru * math.sin((i + 1) * da)))
     # create the shape
-    layout.insert(pya.DPolygon(pts))
+    shape.insert(pya.DPolygon(pts))
 
 class Siemens_star(pya.PCellDeclarationHelper):
   """
@@ -109,8 +118,8 @@ class Siemens_star(pya.PCellDeclarationHelper):
     return pya.Trans(self.shape.bbox().center())
   
   def produce_impl(self):
-    layout = self.cell.shapes(self.l_layer)
-    produce_siemens_star(layout, self.n, self.ru)
+    shape = self.cell.shapes(self.l_layer)
+    produce_siemens_star(shape, self.n, self.ru)
 
 
 
@@ -346,6 +355,7 @@ class Align_default(pya.PCellDeclarationHelper):
     A = [250, 140, 50, 25, 15]
     B = [2000, 1000, 400, 200, 100]
     C = [1000, 500, 200, 100, 50]
+    D = [40,20,9,5,2.2]
     
     shapes = self.cell.shapes(self.l_layer)
     polygon = Produce_Align(shapes,A[obj],B[obj],C[obj])
@@ -353,16 +363,19 @@ class Align_default(pya.PCellDeclarationHelper):
     
     msd_list = [200,100,40,20,10]
     lc_list = [20,10,4,2,1]
-    line_width_list = [40,20,8,4,2]
-    line_height_list = [200,100,40,20,10]
+    line_width_list = D#  [40,20,8,4,2]
+    line_height_list = A #[200,100,40,20,10]
     overlap_list = [100,50,20,10,5]
-    n_list = [11,11,11,11,11]
+    #n_list = [21,21,21,21,21]
     
     if self.vernier:
-      produce_vernier_align(shapes1=self.cell.shapes(self.l_layer),shapes2=self.cell.shapes(self.l2_layer), msd=msd_list[obj], lc=lc_list[obj], line_width=line_width_list[obj], line_height=line_height_list[obj], overlap=overlap_list[obj], n = n_list[obj], mark_center=False)
-    
-    
-    
+      n = math.ceil(1.2*2*(B[obj]+C[obj])/msd_list[obj]) // 2 * 2 + 1
+      produce_vernier_align(shapes1=self.cell.shapes(self.l_layer),shapes2=self.cell.shapes(self.l2_layer), msd=msd_list[obj], lc=lc_list[obj], line_width=line_width_list[obj], line_height=line_height_list[obj], overlap=overlap_list[obj], n = n, mark_center=True)
+      
+      text_pos=pya.DTrans(0, False, -B[obj], B[obj])
+      produce_text(shape = shapes, dbu = self.layout.dbu,  string = "1", text_width = D[obj])
+      
+      
 def ProduceVernier(shapes, spacing, width, height, n, transform, mark_center):
   x = - (spacing*(n-1) + width)/2 
   for i in range(n):
@@ -490,7 +503,7 @@ def ProduceBracket(shapes, line_width, width, transform=pya.DTrans(0, False, 0, 
 
   
   
-def produce_vernier_align(shapes1,shapes2, msd, lc, line_width, line_height, overlap, n, mark_center):
+def produce_vernier_align(shapes1,shapes2, msd, lc, line_width, line_height, overlap, n, mark_center, center_cross = False):
     vc = msd - lc
     width = (n + 2) * msd 
     rotate = pya.DTrans(1,False, 0,0)
@@ -505,7 +518,7 @@ def produce_vernier_align(shapes1,shapes2, msd, lc, line_width, line_height, ove
       ProduceVernier(shapes = shapes2, spacing = vc, width =  line_width,height =  line_height ,n = n, transform = t2,mark_center =  mark_center)
       t1 = rotate * t1
       t2 = rotate * t2
-    if mark_center:
+    if center_cross:
       ProduceBracket(shapes = shapes1, line_width = line_width, width = 2*line_height)
       ProduceCross(shapes = shapes2, line_width = line_width, width = 2*line_height)
       
@@ -540,7 +553,7 @@ class VernierAlign(pya.PCellDeclarationHelper):
     return "Vernier Align(L=" + str(self.l) + ",MSD=" + ('%.0f' % self.msd) + ",LC=" + ('%.0f' % (self.lc)) +  ")"
 
   def produce_impl(self):
-    produce_vernier_align(shapes1=self.cell.shapes(self.l_layer),shapes2=self.cell.shapes(self.l2_layer), msd=self.msd, lc=self.lc, line_width=self.line_width, line_height=self.line_height, overlap=self.overlap, n = self.n, mark_center=self.mark_center)
+    produce_vernier_align(shapes1=self.cell.shapes(self.l_layer),shapes2=self.cell.shapes(self.l2_layer), msd=self.msd, lc=self.lc, line_width=self.line_width, line_height=self.line_height, overlap=self.overlap, n = self.n, mark_center=self.mark_center, center_cross = self.mark_center)
     
 
 
