@@ -33,10 +33,16 @@ when KLayout is run.
 """
 def produce_text(shape = None, dbu = 0.001, string = "missing text", text_width = 100, x = 0, y = 0):
   #text_width: width of the text in um
+  # might give error if text width equals 0
   if shape == None:
     print("No shape provided") 
     return
-  text = pya.TextGenerator.default_generator().text(string, dbu / text_width)
+  if text_width == 0:
+    print("text_width cannot be 0") 
+    return
+    
+  text = pya.TextGenerator.default_generator().text(string, dbu / (10*text_width))
+  text.move(x/dbu, y/dbu)
   shape.insert(text)
 
 
@@ -343,6 +349,7 @@ class Align_default(pya.PCellDeclarationHelper):
     self.param("obj", self.TypeInt, "Objective", choices = [ [ "0.5x", 0 ], [ "1x", 1 ], [ "2.5x", 2 ], [ "5x", 3 ], [ "10x", 4 ] ], default = 0)
     self.param("vernier", self.TypeBoolean, "Add vernier", default = False)  
     self.param("l2", self.TypeLayer, "Layer 2")
+    self.param("label", self.TypeString, "Label", default = None)  
 
   def display_text_impl(self):
     # Provide a descriptive text for the cell
@@ -367,14 +374,14 @@ class Align_default(pya.PCellDeclarationHelper):
     line_height_list = A #[200,100,40,20,10]
     overlap_list = [100,50,20,10,5]
     #n_list = [21,21,21,21,21]
-    
+    if self.label is not None:
+      produce_text(shape = self.cell.shapes(self.l_layer), dbu = self.layout.dbu,  string = self.label, text_width = D[obj], x = - B[obj], y =  B[obj] )
+      
     if self.vernier:
       n = math.ceil(1.2*2*(B[obj]+C[obj])/msd_list[obj]) // 2 * 2 + 1
       produce_vernier_align(shapes1=self.cell.shapes(self.l_layer),shapes2=self.cell.shapes(self.l2_layer), msd=msd_list[obj], lc=lc_list[obj], line_width=line_width_list[obj], line_height=line_height_list[obj], overlap=overlap_list[obj], n = n, mark_center=True)
       
-      text_pos=pya.DTrans(0, False, -B[obj], B[obj])
-      produce_text(shape = shapes, dbu = self.layout.dbu,  string = "1", text_width = D[obj])
-      
+
       
 def ProduceVernier(shapes, spacing, width, height, n, transform, mark_center):
   x = - (spacing*(n-1) + width)/2 
