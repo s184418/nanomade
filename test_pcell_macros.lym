@@ -31,38 +31,235 @@ NOTE: after changing the code, the macro needs to be rerun to install the new
 implementation. The macro is also set to "auto run" to install the PCell 
 when KLayout is run.
 """
-def produce_text(shape = None, dbu = 0.001, string = "missing text", text_width = 100, x = 0, y = 0):
-  #text_width: width of the text in um
-  # might give error if text width equals 0
-  if shape == None:
-    print("No shape provided") 
-    return
-  if text_width == 0:
-    print("text_width cannot be 0") 
-    return
+
+class Create:
     
-  text = pya.TextGenerator.default_generator().text(string, dbu / (10*text_width))
-  text.move(x/dbu, y/dbu)
-  shape.insert(text)
+  def hallbar(shapes, bar_gap, side_contact_length, side_contact_width, main_contact_length, main_contact_width, transform=pya.DTrans(0, False, 0, 0), n_side_contacts=4):
+    # Define the points for the hall bar
+    #define starting points (top left hand corner) such that the center of the structure will be a 0,0
+    x0 = - ( 2* main_contact_length  + bar_gap*(n_side_contacts/2 - 1) + side_contact_width*( n_side_contacts/2 ))/2 ; y0 = main_contact_width/2;
+    
+    x = [x0]
+    y = [y0]
+    
+    #define the points of the top trace of structure
+    for i in range(int(n_side_contacts/2)):
+      x_offset = x0 +  (bar_gap +  side_contact_width)* i + main_contact_length
+      
+      x.append(x_offset)
+      y.append(y0)
+      
+      x.append(x_offset)
+      y.append(y0 + side_contact_length)
+      
+      x.append(x_offset + side_contact_width)
+      y.append(y0 + side_contact_length)
+      
+      x.append(x_offset + side_contact_width)
+      y.append(y0)
+    
+    x.append(x_offset + side_contact_width + main_contact_length)
+    y.append(y0)
+    
+    #We then mirror the y points across the x-axis by multiplying them by -1 and reverse so that the list gose clockwise around the shape
+    
+    y2 = [-i for i in reversed(y)]
+    x2 = [i for i in reversed(x)]
+    
+    x += x2
+    y += y2
+    
+    #We then convert to dpoints
+    
+    pts = [pya.DPoint(x[i],y[i]) for i , xi in enumerate(x)]
+     
+    #We then add the two x and y lists together 
+      
+  # Create the hall bar shape using all the points
+    hall_bar = pya.DSimplePolygon(pts)
+    shapes.insert(hall_bar.transformed(transform))
 
+  def cross(shapes, line_width, width, transform=pya.DTrans(0, False, 0, 0)):
+    """
+    Produce a cross shape and insert it into the specified shapes.
 
-  #shapes.insert(region)
+    Parameters:
+    - shapes: The target shape container.
+    - line_width: The width of the cross lines.
+    - width: The overall width of the cross.
+    - transform: The transformation to be applied to the cross shape.
+
+    Returns:
+    None
+    """
+    half_line_width = line_width / 2
+    half_width = width / 2
+
+    # Define the list of points for the perimeter of the cross shape
+    cross_points = [
+        pya.DPoint(half_width, -half_line_width),  # Top right
+        pya.DPoint(half_line_width, -half_line_width),  # Top right inner
+        pya.DPoint(half_line_width, -half_width),  # Top right inner
+        pya.DPoint(-half_line_width, -half_width),  # Top left inner
+        pya.DPoint(-half_line_width, -half_line_width),  # Top left inner
+        pya.DPoint(-half_width, -half_line_width),  # Top left
+        pya.DPoint(-half_width, half_line_width),   # Bottom left
+        pya.DPoint(-half_line_width, half_line_width),   # Bottom left inner
+        pya.DPoint(-half_line_width, half_width),  # Bottom left inner
+        pya.DPoint(half_line_width, half_width),  # Bottom right inner
+        pya.DPoint(half_line_width, half_line_width),  # Bottom right inner
+        pya.DPoint(half_width, half_line_width),   # Bottom right
+    ]
+
+    # Create the cross shape using the list of points
+    cross_shape = pya.DSimplePolygon(cross_points)
+
+    # Insert the cross shape into the specified shapes with the provided transformation
+    shapes.insert(cross_shape.transformed(transform))
   
-def produce_siemens_star(shape, n, ru):
-    # This is the main part of the implementation: create the layout
-    verts  = n * 2
-    # compute the Siemens_star
-    da = math.pi * 2 / verts
-    #pts = [ pya.DPoint(self.ru * math.cos(i * da), self.ru * math.sin(i * da)) for i in range(0, self.n) ]
+  def bracket(shapes, line_width, width, transform=pya.DTrans(0, False, 0, 0)):
+    """
+    Produce a bracket shape and insert it into the specified shapes.
+
+    Parameters:
+    - shapes: The target shape container.
+    - line_width: The width of the bracket lines.
+    - width: The overall width of the bracket.
+    - transform: The transformation to be applied to the bracket shape.
+
+    Returns:
+    None
+    """
+    gap = line_width
+    t = pya.DTrans(1)
+
+    # Define the bracket points
+    bracket_points = [
+        pya.DPoint(line_width / 2 + gap, line_width / 2 + gap),
+        pya.DPoint(width / 2, line_width / 2 + gap),
+        pya.DPoint(width / 2, line_width + gap),
+        pya.DPoint(line_width + gap, line_width + gap),
+        pya.DPoint(line_width + gap, width / 2),
+        pya.DPoint(line_width / 2 + gap, width / 2),
+    ]
+
+    # Create the bracket shape
+    bracket_shape = pya.DSimplePolygon(bracket_points)
+
+    # Insert the bracket shape into the specified shapes with the provided transformation
+    for _ in range(4):
+        shapes.insert(bracket_shape.transformed(transform))
+        bracket_shape = bracket_shape.transformed(t)
+
+  def lines(shapes, d0, dd, h, w0, dw, n):
+    x = 0
+    d = d0
+    w = w0
+    for i in range(0,n):
+      shapes.insert(pya.DBox(x, 0, w + x ,h))
+      x = x + d + w
+      d = d + dd 
+      
+      w = w + dw
+    
+  def vernier_align(shapes1,shapes2, msd, lc, line_width, line_height, overlap, n, mark_center, center_cross = False):
+    vc = msd - lc
+    width = (n + 2) * msd 
+    rotate = pya.DTrans(1,False, 0,0)
+    
+    t1 =  pya.DTrans(0,False, 0,-width/2)
+    t2 = pya.DTrans(2,False, 0 ,-width/2 + line_height - overlap)
+    #side 1
+    
+    #Produce each of the four sides and then rotate 90 deg to produce the next 
+    for _ in range(4):
+      Create.vernier(shapes = shapes1, spacing = msd, width =  line_width,height =  line_height ,n = n, transform = t1,mark_center =  mark_center)
+      Create.vernier(shapes = shapes2, spacing = vc, width =  line_width,height =  line_height ,n = n, transform = t2,mark_center =  mark_center)
+      t1 = rotate * t1
+      t2 = rotate * t2
+    if center_cross:
+      Create.bracket(shapes = shapes1, line_width = line_width, width = 2*line_height)
+      Create.cross(shapes = shapes2, line_width = line_width, width = 2*line_height)
+      
+  def vernier(shapes, spacing, width, height, n, transform, mark_center):
+    x = - (spacing*(n-1) + width)/2 
+    for i in range(n):
+      box = pya.DBox(x, -height/2, x + width ,height/2)
+      x = x + spacing
+      shapes.insert(box.transformed(transform))
+    
+    if (mark_center and n % 2 &gt; 0):
+      shapes.insert(pya.DBox(-width/2, -(height + width) , width/2, -(height/2 + width) ).transformed(transform))
+      
+  def align(shapes,a,b,c):
+    t = pya.DTrans(1)
     pts = []
-    for i in range(0, verts):
-      if i % 2 == 0:
-        pts.append( pya.DPoint(0, 0))
-      else:
-        pts.append( pya.DPoint(ru * math.cos(i * da), ru * math.sin(i * da)))
-        pts.append( pya.DPoint(ru * math.cos((i + 1) * da), ru * math.sin((i + 1) * da)))
+    pts.append(pya.DPoint(0, 0)) 
+    pts.append(pya.DPoint(c, a/2))
+    pts.append(pya.DPoint(c + b, a/2))
+    pts.append(pya.DPoint(c + b, -a/2))
+    pts.append(pya.DPoint(c, -a/2))
+    
     # create the shape
-    shape.insert(pya.DPolygon(pts))
+    for j in range(3):
+      for i in range(len(pts)-5, len(pts)):
+        pts.append(pts[i] *t)
+      
+    shapes.insert(pya.DSimplePolygon(pts))
+    
+  def ruler(th, tw, lw,length,d,major):
+    n_teeth = int(length / d)
+    x0 = - (length + d)/2
+    x = x0
+    pts = []
+    pts.append(pya.DPoint(x0, 0))
+    pts.append(pya.DPoint(x0, lw))
+    for i in range(0, n_teeth):
+      x = x + d 
+      pts.append(pya.DPoint(x - tw/2, lw))
+      if i % major == 0:
+        pts.append(pya.DPoint(x - tw/2, lw + th * 2))
+        pts.append(pya.DPoint(x + tw - tw/2, lw + th * 2))  
+      else:
+        pts.append(pya.DPoint(x - tw/2, lw + th))
+        pts.append(pya.DPoint(x + tw - tw/2, lw + th))
+      pts.append(pya.DPoint(x + tw - tw/2, lw))
+    pts.append(pya.DPoint(x + d, lw))
+    pts.append(pya.DPoint(x + d, 0))
+  
+    return pya.DSimplePolygon(pts)
+  def text(shape = None, dbu = 0.001, string = "missing text", text_width = 100, x = 0, y = 0):
+    #text_width: width of the text in um
+    # might give error if text width equals 0
+    if shape == None:
+      print("No shape provided") 
+      return
+    if text_width == 0:
+      print("text_width cannot be 0") 
+      return
+      
+    text = pya.TextGenerator.default_generator().text(string, dbu / (10*text_width))
+    text.move(x/dbu, y/dbu)
+    shape.insert(text)
+  
+  
+    #shapes.insert(region)
+    
+  def siemens_star(shape, n, ru):
+      # This is the main part of the implementation: create the layout
+      verts  = n * 2
+      # compute the Siemens_star
+      da = math.pi * 2 / verts
+      #pts = [ pya.DPoint(self.ru * math.cos(i * da), self.ru * math.sin(i * da)) for i in range(0, self.n) ]
+      pts = []
+      for i in range(0, verts):
+        if i % 2 == 0:
+          pts.append( pya.DPoint(0, 0))
+        else:
+          pts.append( pya.DPoint(ru * math.cos(i * da), ru * math.sin(i * da)))
+          pts.append( pya.DPoint(ru * math.cos((i + 1) * da), ru * math.sin((i + 1) * da)))
+      # create the shape
+      shape.insert(pya.DPolygon(pts))
 
 class Siemens_star(pya.PCellDeclarationHelper):
   """
@@ -125,7 +322,7 @@ class Siemens_star(pya.PCellDeclarationHelper):
   
   def produce_impl(self):
     shape = self.cell.shapes(self.l_layer)
-    produce_siemens_star(shape, self.n, self.ru)
+    Create.siemens_star(shape, self.n, self.ru)
 
 
 
@@ -194,6 +391,8 @@ class Spiral(pya.PCellDeclarationHelper):
     # create the shape
     self.cell.shapes(self.l_layer).insert(pya.Path(pts,self.width/self.layout.dbu))
     
+    
+    
 class Lines(pya.PCellDeclarationHelper):
   """
   The PCell declaration for the Lines
@@ -223,22 +422,8 @@ class Lines(pya.PCellDeclarationHelper):
     return "Lines(L=" + str(self.l) + ",H=" + ('%.3f' % self.h) + ")"
 
   def produce_impl(self):
-  
-    # This is the main part of the implementation: create the layout
-    x = 0
-    d0 = self.d0
-    dd = self.dd 
-    d = d0
-    h = self.h
-    w = self.w0
-    dw = self.dw
-    for i in range(0, self.n):
-      self.cell.shapes(self.l_layer).insert(pya.DBox(x, 0, w + x ,h))
-      x = x + d + w
-      d = d + dd 
-      
-      w = w + dw
-
+    Create.lines(shapes = self.cell.shapes(self.l_layer), d0 = self.d0, dd = self.dd, h = self.h, w0 = self.w0, dw = self.dw, n = self.n)
+    
 class Ruler(pya.PCellDeclarationHelper):
   """
   The PCell declaration for the Ruler
@@ -286,53 +471,13 @@ class Ruler(pya.PCellDeclarationHelper):
   
     # This is the main part of the implementation: create the layout
     #rotate 90
-    t = pya.DTrans(1)
-    polygon = Produce_Ruler( self.th, self.tw, self.lw,self.length,self.d,self.major)
+    t = pya.DTrans(0)
+    polygon = Create.ruler( self.th, self.tw, self.lw,self.length,self.d,self.major)
     shapes = self.cell.shapes(self.l_layer)
     shapes.insert(polygon.transform(t))
     
     
-    
-def Produce_Ruler(th, tw, lw,length,d,major):
-  
-  n_teeth = int(length / d)
-  x0 = - (length + d)/2
-  x = x0
-  pts = []
-  pts.append(pya.DPoint(x0, 0))
-  pts.append(pya.DPoint(x0, lw))
-  for i in range(0, n_teeth):
-    x = x + d 
-    pts.append(pya.DPoint(x - tw/2, lw))
-    if i % major == 0:
-      pts.append(pya.DPoint(x - tw/2, lw + th * 2))
-      pts.append(pya.DPoint(x + tw - tw/2, lw + th * 2))  
-    else:
-      pts.append(pya.DPoint(x - tw/2, lw + th))
-      pts.append(pya.DPoint(x + tw - tw/2, lw + th))
-    pts.append(pya.DPoint(x + tw - tw/2, lw))
-  pts.append(pya.DPoint(x + d, lw))
-  pts.append(pya.DPoint(x + d, 0))
 
-  return pya.DSimplePolygon(pts)
-  
-def Produce_Align(shapes,a,b,c):
-  t = pya.DTrans(1)
-  pts = []
-  pts.append(pya.DPoint(0, 0)) 
-  pts.append(pya.DPoint(c, a/2))
-  pts.append(pya.DPoint(c + b, a/2))
-  pts.append(pya.DPoint(c + b, -a/2))
-  pts.append(pya.DPoint(c, -a/2))
-  
-  # create the shape
-  for j in range(3):
-    for i in range(len(pts)-5, len(pts)):
-      pts.append(pts[i] *t)
-    
-  shapes.insert(pya.DSimplePolygon(pts))
-  
-  
 class Align_default(pya.PCellDeclarationHelper):
   """
   The PCell declaration for the Siemens_star
@@ -369,7 +514,7 @@ class Align_default(pya.PCellDeclarationHelper):
     D = [40,20,9,5,2.2]
     
     shapes = self.cell.shapes(self.l_layer)
-    Produce_Align(shapes,A[obj],B[obj],C[obj])
+    Create.align(shapes,A[obj],B[obj],C[obj])
     
     
     msd_list = [200,100,40,20,10]
@@ -379,23 +524,14 @@ class Align_default(pya.PCellDeclarationHelper):
     overlap_list = [100,50,20,10,5]
     #n_list = [21,21,21,21,21]
     if self.label is not None:
-      produce_text(shape = self.cell.shapes(self.l_layer), dbu = self.layout.dbu,  string = self.label, text_width = D[obj], x = ( B[obj] + C[obj]) * self.text_x, y =  ( B[obj] + C[obj])*self.text_y )
+      Create.text(shape = self.cell.shapes(self.l_layer), dbu = self.layout.dbu,  string = self.label, text_width = D[obj], x = ( B[obj] + C[obj]) * self.text_x, y =  ( B[obj] + C[obj])*self.text_y )
       
     if self.vernier:
       n = math.ceil(1.2*2*(B[obj]+C[obj])/msd_list[obj]) // 2 * 2 + 1
-      produce_vernier_align(shapes1=self.cell.shapes(self.l_layer),shapes2=self.cell.shapes(self.l2_layer), msd=msd_list[obj], lc=lc_list[obj], line_width=line_width_list[obj], line_height=line_height_list[obj], overlap=overlap_list[obj], n = n, mark_center=True)
+      Create.vernier_align(shapes1=self.cell.shapes(self.l_layer),shapes2=self.cell.shapes(self.l2_layer), msd=msd_list[obj], lc=lc_list[obj], line_width=line_width_list[obj], line_height=line_height_list[obj], overlap=overlap_list[obj], n = n, mark_center=True)
       
 
-      
-def ProduceVernier(shapes, spacing, width, height, n, transform, mark_center):
-  x = - (spacing*(n-1) + width)/2 
-  for i in range(n):
-    box = pya.DBox(x, -height/2, x + width ,height/2)
-    x = x + spacing
-    shapes.insert(box.transformed(transform))
-  
-  if (mark_center and n % 2 &gt; 0):
-    shapes.insert(pya.DBox(-width/2, -(height + width) , width/2, -(height/2 + width) ).transformed(transform))
+
     
     
 class Vernier(pya.PCellDeclarationHelper):
@@ -435,103 +571,10 @@ class Vernier(pya.PCellDeclarationHelper):
     t2 = pya.DTrans(2,False, 0 ,self.offset + self.height - self.overlap)
     
     # instantite the the two scales 
-    ProduceVernier(shapes = shapes1, spacing = self.MSD,width =  self.width,height =  self.height ,n =  self.n, transform = t1,mark_center =  self.mark_center)
-    ProduceVernier(shapes = shapes2, spacing = VC,width =  self.width, height = self.height, n=  self.n, transform = t2,mark_center = self.mark_center)
+    Create.vernier(shapes = shapes1, spacing = self.MSD,width =  self.width,height =  self.height ,n =  self.n, transform = t1,mark_center =  self.mark_center)
+    Create.vernier(shapes = shapes2, spacing = VC,width =  self.width, height = self.height, n=  self.n, transform = t2,mark_center = self.mark_center)
     
-    
-    
-def ProduceCross(shapes, line_width, width, transform=pya.DTrans(0, False, 0, 0)):
-    """
-    Produce a cross shape and insert it into the specified shapes.
-
-    Parameters:
-    - shapes: The target shape container.
-    - line_width: The width of the cross lines.
-    - width: The overall width of the cross.
-    - transform: The transformation to be applied to the cross shape.
-
-    Returns:
-    None
-    """
-    half_line_width = line_width / 2
-    half_width = width / 2
-
-    # Define the list of points for the perimeter of the cross shape
-    cross_points = [
-        pya.DPoint(half_width, -half_line_width),  # Top right
-        pya.DPoint(half_line_width, -half_line_width),  # Top right inner
-        pya.DPoint(half_line_width, -half_width),  # Top right inner
-        pya.DPoint(-half_line_width, -half_width),  # Top left inner
-        pya.DPoint(-half_line_width, -half_line_width),  # Top left inner
-        pya.DPoint(-half_width, -half_line_width),  # Top left
-        pya.DPoint(-half_width, half_line_width),   # Bottom left
-        pya.DPoint(-half_line_width, half_line_width),   # Bottom left inner
-        pya.DPoint(-half_line_width, half_width),  # Bottom left inner
-        pya.DPoint(half_line_width, half_width),  # Bottom right inner
-        pya.DPoint(half_line_width, half_line_width),  # Bottom right inner
-        pya.DPoint(half_width, half_line_width),   # Bottom right
-    ]
-
-    # Create the cross shape using the list of points
-    cross_shape = pya.DSimplePolygon(cross_points)
-
-    # Insert the cross shape into the specified shapes with the provided transformation
-    shapes.insert(cross_shape.transformed(transform))
   
-def ProduceBracket(shapes, line_width, width, transform=pya.DTrans(0, False, 0, 0)):
-    """
-    Produce a bracket shape and insert it into the specified shapes.
-
-    Parameters:
-    - shapes: The target shape container.
-    - line_width: The width of the bracket lines.
-    - width: The overall width of the bracket.
-    - transform: The transformation to be applied to the bracket shape.
-
-    Returns:
-    None
-    """
-    gap = line_width
-    t = pya.DTrans(1)
-
-    # Define the bracket points
-    bracket_points = [
-        pya.DPoint(line_width / 2 + gap, line_width / 2 + gap),
-        pya.DPoint(width / 2, line_width / 2 + gap),
-        pya.DPoint(width / 2, line_width + gap),
-        pya.DPoint(line_width + gap, line_width + gap),
-        pya.DPoint(line_width + gap, width / 2),
-        pya.DPoint(line_width / 2 + gap, width / 2),
-    ]
-
-    # Create the bracket shape
-    bracket_shape = pya.DSimplePolygon(bracket_points)
-
-    # Insert the bracket shape into the specified shapes with the provided transformation
-    for _ in range(4):
-        shapes.insert(bracket_shape.transformed(transform))
-        bracket_shape = bracket_shape.transformed(t)
-
-  
-  
-def produce_vernier_align(shapes1,shapes2, msd, lc, line_width, line_height, overlap, n, mark_center, center_cross = False):
-    vc = msd - lc
-    width = (n + 2) * msd 
-    rotate = pya.DTrans(1,False, 0,0)
-    
-    t1 =  pya.DTrans(0,False, 0,-width/2)
-    t2 = pya.DTrans(2,False, 0 ,-width/2 + line_height - overlap)
-    #side 1
-    
-    #Produce each of the four sides and then rotate 90 deg to produce the next 
-    for _ in range(4):
-      ProduceVernier(shapes = shapes1, spacing = msd, width =  line_width,height =  line_height ,n = n, transform = t1,mark_center =  mark_center)
-      ProduceVernier(shapes = shapes2, spacing = vc, width =  line_width,height =  line_height ,n = n, transform = t2,mark_center =  mark_center)
-      t1 = rotate * t1
-      t2 = rotate * t2
-    if center_cross:
-      ProduceBracket(shapes = shapes1, line_width = line_width, width = 2*line_height)
-      ProduceCross(shapes = shapes2, line_width = line_width, width = 2*line_height)
       
 class VernierAlign(pya.PCellDeclarationHelper):
   """
@@ -564,7 +607,7 @@ class VernierAlign(pya.PCellDeclarationHelper):
     return "Vernier Align(L=" + str(self.l) + ",MSD=" + ('%.0f' % self.msd) + ",LC=" + ('%.0f' % (self.lc)) +  ")"
 
   def produce_impl(self):
-    produce_vernier_align(shapes1=self.cell.shapes(self.l_layer),shapes2=self.cell.shapes(self.l2_layer), msd=self.msd, lc=self.lc, line_width=self.line_width, line_height=self.line_height, overlap=self.overlap, n = self.n, mark_center=self.mark_center, center_cross = self.mark_center)
+    Create.vernier_align(shapes1=self.cell.shapes(self.l_layer),shapes2=self.cell.shapes(self.l2_layer), msd=self.msd, lc=self.lc, line_width=self.line_width, line_height=self.line_height, overlap=self.overlap, n = self.n, mark_center=self.mark_center, center_cross = self.mark_center)
     
 
 
@@ -596,56 +639,9 @@ class HallBar(pya.PCellDeclarationHelper):
 
   def produce_impl(self):
     shapes1 = self.cell.shapes(self.l_layer)
-    ProduceHallbar(shapes = shapes1 ,bar_gap = self.bar_gap, side_contact_length = self.side_contact_length, side_contact_width = self.side_contact_width , main_contact_length = self.main_contact_length, main_contact_width = self.main_contact_width , n_side_contacts = self.n_side_contacts)
+    Create.hallbar(shapes = shapes1 ,bar_gap = self.bar_gap, side_contact_length = self.side_contact_length, side_contact_width = self.side_contact_width , main_contact_length = self.main_contact_length, main_contact_width = self.main_contact_width , n_side_contacts = self.n_side_contacts)
       
-    
 
-
-
-def ProduceHallbar(shapes, bar_gap, side_contact_length, side_contact_width, main_contact_length, main_contact_width, transform=pya.DTrans(0, False, 0, 0), n_side_contacts=4):
-    # Define the points for the hall bar
-    #define starting points (top left hand corner) such that the center of the structure will be a 0,0
-    x0 = - ( 2* main_contact_length  + bar_gap*(n_side_contacts/2 - 1) + side_contact_width*( n_side_contacts/2 ))/2 ; y0 = main_contact_width/2;
-    
-    x = [x0]
-    y = [y0]
-    
-    #define the points of the top trace of structure
-    for i in range(int(n_side_contacts/2)):
-      x_offset = x0 +  (bar_gap +  side_contact_width)* i + main_contact_length
-      
-      x.append(x_offset)
-      y.append(y0)
-      
-      x.append(x_offset)
-      y.append(y0 + side_contact_length)
-      
-      x.append(x_offset + side_contact_width)
-      y.append(y0 + side_contact_length)
-      
-      x.append(x_offset + side_contact_width)
-      y.append(y0)
-    
-    x.append(x_offset + side_contact_width + main_contact_length)
-    y.append(y0)
-    
-    #We then mirror the y points across the x-axis by multiplying them by -1 and reverse so that the list gose clockwise around the shape
-    
-    y2 = [-i for i in reversed(y)]
-    x2 = [i for i in reversed(x)]
-    
-    x += x2
-    y += y2
-    
-    #We then convert to dpoints
-    
-    pts = [pya.DPoint(x[i],y[i]) for i , xi in enumerate(x)]
-     
-    #We then add the two x and y lists together 
-      
-  # Create the hall bar shape using all the points
-    hall_bar = pya.DSimplePolygon(pts)
-    shapes.insert(hall_bar.transformed(transform))
 
 class MyLib(pya.Library):
   """
