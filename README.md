@@ -20,4 +20,12 @@ A parametric design for a hall bar
 
 - **Layer** - Defines the Layer of the main structure of the hall bar
 - **Layer 2** - Defines the layer of the side contacts
-- **Gap between side contacts** - The distance in $\mu m$
+- **Gap between side contacts** - The distance in $\mu m$ between the edge of one side contact and another
+- **Side contact length** - The length of the side contacts in $\mu m$
+- **Side contact width** - The length of the side contacts in $\mu m$ 
+- **Main contact length** - The length in $\mu m$ of the main contacts measured from the end of the side contacts.
+- **Main contact width** - The width in $\mu m$ of the main contacts
+
+### Functions 
+
+`ProduceHallbar(shapes, bar_gap, side_contact_length, side_contact_width, main_contact_length, main_contact_width, transform=pya.DTrans(0, False, 0, 0), n_side_contacts=4)` 
