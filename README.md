@@ -13,3 +13,11 @@ Patterns include:
 ## siemens star
 A resolution test that is comprised of n identical triangles spaced equidistant around a central point
 
+
+
+## Hallbar 
+A parametric design for a hall bar 
+
+- **Layer** - Defines the Layer of the main structure of the hall bar
+- **Layer 2** - Defines the layer of the side contacts
+- **Gap between side contacts** - The distance in $\mu m$
