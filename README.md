@@ -22,9 +22,10 @@ A parametric design for a hall bar
 - **Layer 2** - Defines the layer of the side contacts
 - **Gap between side contacts** - The distance in $\mu m$ between the edge of one side contact and another
 - **Side contact length** - The length of the side contacts in $\mu m$
-- **Side contact width** - The length of the side contacts in $\mu m$ 
+- **Side contact width** - The width of the side contacts in $\mu m$ 
 - **Main contact length** - The length in $\mu m$ of the main contacts measured from the end of the side contacts.
 - **Main contact width** - The width in $\mu m$ of the main contacts
+- **Number of side contacts** - The integer number of side contacts (rounded down to the nearest even number) 
 
 ### Build function 
 
