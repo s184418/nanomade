@@ -140,13 +140,13 @@ class Create:
     shapes.insert(cross_shape.transformed(transform))
  
         
-  def hallbar(shapes, bar_gap, side_contact_length, side_contact_width, main_contact_length, main_contact_width, transform=pya.DTrans(0, False, 0, 0), n_side_contacts=4):
+  def hallbar(shapes, side_contact_gap, side_contact_length, side_contact_width, main_contact_length, main_contact_width, transform=pya.DTrans(0, False, 0, 0), n_side_contacts=4):
     """
     Produce a hallbar and insert it into the specified shapes.
 
     Parameters:
     - shapes: The target shape container.
-    - bar_gap: The distance in um between the edge of one side contact and another
+    - side_contact_gap: The distance in um between the edge of one side contact and another
     - side_contact_length: The length of the side contacts in um
     - side_contact_width: The width of the side contacts in um
     - main_contact_length: The length in um of the main contacts measured from the end of the side contacts.
@@ -159,14 +159,14 @@ class Create:
     """
     # Define the points for the hall bar
     #define starting points (top left hand corner) such that the center of the structure will be a 0,0
-    x0 = - ( 2* main_contact_length  + bar_gap*(n_side_contacts/2 - 1) + side_contact_width*( n_side_contacts/2 ))/2 ; y0 = main_contact_width/2;
+    x0 = - ( 2* main_contact_length  + side_contact_gap*(n_side_contacts/2 - 1) + side_contact_width*( n_side_contacts/2 ))/2 ; y0 = main_contact_width/2;
     
     x = [x0]
     y = [y0]
     
     #define the points of the top trace of structure
     for i in range(int(n_side_contacts/2)):
-      x_offset = x0 +  (bar_gap +  side_contact_width)* i + main_contact_length
+      x_offset = x0 +  (side_contact_gap +  side_contact_width)* i + main_contact_length
       
       x.append(x_offset)
       y.append(y0)
@@ -384,7 +384,7 @@ class HallBar(pya.PCellDeclarationHelper):
     self.param("l", self.TypeLayer, "Layer")
     self.param("l2", self.TypeLayer, "Layer 2")
     self.param("s", self.TypeShape, "", default = pya.DPoint(0, 0))
-    self.param("bar_gap", self.TypeDouble, "Gap between side contacts", default = 300)
+    self.param("side_contact_gap", self.TypeDouble, "Gap between side contacts", default = 300)
     self.param("side_contact_length", self.TypeDouble, "Side contact length", default = 200)
     self.param("side_contact_width", self.TypeDouble, "Side contact width", default = 100)
     self.param("main_contact_length", self.TypeDouble, "Main contact length", default = 200)
@@ -394,11 +394,11 @@ class HallBar(pya.PCellDeclarationHelper):
 
   def display_text_impl(self):
     # Provide a descriptive text for the cell
-    return "HallBar(L=" + str(self.l) + ",Gap=" + ('%.3f' % self.bar_gap) + ")"
+    return "HallBar(L=" + str(self.l) + ",Gap=" + ('%.3f' % self.side_contact_gap) + ")"
 
   def produce_impl(self):
     shapes1 = self.cell.shapes(self.l_layer)
-    Create.hallbar(shapes = shapes1 ,bar_gap = self.bar_gap, side_contact_length = self.side_contact_length, side_contact_width = self.side_contact_width , main_contact_length = self.main_contact_length, main_contact_width = self.main_contact_width , n_side_contacts = self.n_side_contacts)
+    Create.hallbar(shapes = shapes1 ,side_contact_gap = self.side_contact_gap, side_contact_length = self.side_contact_length, side_contact_width = self.side_contact_width , main_contact_length = self.main_contact_length, main_contact_width = self.main_contact_width , n_side_contacts = self.n_side_contacts)
       
 
 
