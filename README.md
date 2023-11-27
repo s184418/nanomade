@@ -30,5 +30,5 @@ A parametric design for a hall bar
 ### Build function 
 
 ```python
-ProduceHallbar(shapes, bar_gap, side_contact_length, side_contact_width, main_contact_length, main_contact_width, transform=pya.DTrans(0, False, 0, 0), n_side_contacts=4)
+hallbar(shapes, side_contact_gap, side_contact_length, side_contact_width, main_contact_length, main_contact_width, transform=pya.DTrans(0, False, 0, 0), n_side_contacts=4)
 ```
