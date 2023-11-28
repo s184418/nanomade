@@ -384,7 +384,7 @@ class HallBar(pya.PCellDeclarationHelper):
     self.param("l", self.TypeLayer, "Layer")
     self.param("l2", self.TypeLayer, "Layer 2")
     self.param("s", self.TypeShape, "", default = pya.DPoint(0, 0))
-    self.param("side_contact_gap", self.TypeDouble, "Gap between side contacts", default = 300)
+    self.param("side_contact_gap", self.TypeDouble, "Side contact gap", default = 300)
     self.param("side_contact_length", self.TypeDouble, "Side contact length", default = 200)
     self.param("side_contact_width", self.TypeDouble, "Side contact width", default = 100)
     self.param("main_contact_length", self.TypeDouble, "Main contact length", default = 200)
