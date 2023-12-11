@@ -704,8 +704,36 @@ class VernierAlign(pya.PCellDeclarationHelper):
     Create.vernier_align(shapes1=self.cell.shapes(self.l_layer),shapes2=self.cell.shapes(self.l2_layer), msd=self.msd, lc=self.lc, line_width=self.line_width, line_height=self.line_height, overlap=self.overlap, n = self.n, mark_center=self.mark_center, center_cross = self.mark_center)
     
 
+class Write_area(pya.PCellDeclarationHelper):
+  """
+  The PCell declaration for the a box equal to the write are
+  """
+
+  def __init__(self):
+
+    # Important: initialize the super class
+    super(Write_area, self).__init__()
+
+    # declare the parameters
+    self.param("l", self.TypeLayer, "Layer 1")
+    self.param("obj", self.TypeInt, "Objective", choices = [ [ "0.5x", 0 ], [ "1x", 1 ], [ "2.5x", 2 ], [ "5x", 3 ], [ "10x", 4 ] ], default = 0)
 
 
+  def display_text_impl(self):
+    # Provide a descriptive text for the cell
+    
+    objname = [ "0.5x","1x","2.5x","5x","10x"]
+    return "Write_Area(L=" + str(self.l) + ", obj = " + objname[self.obj] + ")"
+
+  def produce_impl(self):
+    obj = self.obj 
+    X = [26115.92, 13715.44, 5483.62, 2714.75, 1351.137]
+    Y = [14690.2, 7714.94, 3084.53, 1527.04, 703.84]
+    
+    shapes = self.cell.shapes(self.l_layer)
+    shapes.insert(pya.DBox(X[obj], Y[obj]))
+    
+    
 
 class MyLib(pya.Library):
   """
@@ -726,6 +754,7 @@ class MyLib(pya.Library):
     self.layout().register_pcell("Vernier", Vernier())
     self.layout().register_pcell("VernierAlign", VernierAlign())
     self.layout().register_pcell("HallBar", HallBar())
+    self.layout().register_pcell("Write_area", Write_area())
     # That would be the place to put in more PCells ...
     
     # Register us with the name "TestLib".
