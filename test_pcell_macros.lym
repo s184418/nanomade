@@ -727,8 +727,8 @@ class Write_area(pya.PCellDeclarationHelper):
 
   def produce_impl(self):
     obj = self.obj 
-    X = [26115.92, 13715.44, 5483.62, 2714.75, 1351.137]
-    Y = [14690.2, 7714.94, 3084.53, 1527.04, 703.84]
+    X = [26115.92, 13427, 5331, 2687, 1328]
+    Y = [14690.2, 7552, 2998, 1511, 747]
     
     shapes = self.cell.shapes(self.l_layer)
     shapes.insert(pya.DBox(X[obj], Y[obj]))

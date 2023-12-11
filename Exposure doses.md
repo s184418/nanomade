@@ -28,7 +28,7 @@ Copying recipe
 ## Actual exposure
 0.7um LOR, 1.7um AZ1512HS 
 
-- 10x obj: 0.05s 
+- 10x obj: 0.1s 
 - 1x obj: 6s
 
 # Development
