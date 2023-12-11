@@ -2,13 +2,38 @@ Polos system:
 10x exposure power 1750 mW/cm2
 1x 4.8
 
+# Spin coating
 Copying recipe
 (https://www.epfl.ch/research/facilities/cmi/process/photolithography/photoresist-selection/lor-5a/)
 
-0.7um LOR, 1.7um AZ1512HS 65mJ/cm2 = 0.037 seconds for 10x, 13.54 seconds for 1x
 
-For LOR3A spin 1000rpm (bake 180C 4 minutes) and AZ1512HS spin 2000 rpm (100C 1 minute 30 seconds) - 0.44um and 1.7um respectively.
+## LOR3A
+- spincoat: 1000rpm 500rpm/s 
+- bake: @ 180C for 4 minutes
+- expected film thickness: 0.44um 
 
+## AZ1512HS
+- spincoat: 2000 rpm
+- bake: @ 100C for 1 minute 30 seconds
+- expected film thickness: 1.7um respectively
 
-develop for 1m30s
+# Exposure
+
+## Expected exposure
+0.7um LOR, 1.7um AZ1512HS 65mJ/cm2
+
+- 10x obj: 0.037s 
+- 1x obj: 13.54s
+
+## Actual exposure
+0.7um LOR, 1.7um AZ1512HS 
+
+- 10x obj: 0.05s 
+- 1x obj: 6s
+
+# Development
+
+- Develop in MR-D526/S for 90s 
+- Rinse in DI water for 60s
+
 
