@@ -353,7 +353,8 @@ class Align_default(pya.PCellDeclarationHelper):
     
     shapes = self.cell.shapes(self.l_layer)
     Create.align(shapes,A[obj],B[obj],C[obj])
-    
+    shapes = self.cell.shapes(self.l2_layer)
+    Create.align(shapes,A[obj],B[obj],C[obj])
     
     msd_list = [200,100,40,20,10]
     lc_list = [20,10,4,2,1]
