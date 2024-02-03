@@ -18,18 +18,13 @@
  <text>import pya
 import math
 
-#Try install numpy on Polos PC ? 
-#import numpy as np
 
 """
-This sample PCell implements a library called "MyLib" with a single PCell that
-draws a Siemens_star. It demonstrates the basic implementation techniques for a PCell 
-and how to use the "guiding shape" feature to implement a handle for the Siemens_star
-radius.
+This scrip implements a library of PCells and associates create functions that 
+are used to instantiate a number of alignment patterns and device.
 
-NOTE: after changing the code, the macro needs to be rerun to install the new
-implementation. The macro is also set to "auto run" to install the PCell 
-when KLayout is run.
+
+
 """
 
 class Create: 
@@ -109,7 +104,7 @@ class Create:
     - shapes: The target shape container.
     - line_width: The width of the cross lines.
     - width: The overall width of the cross.
-    - transform: The transformation to be applied to the cross shape.
+    - transform: The transformation to be applied to the cross shape. Default is none
 
     Returns:
     None
@@ -760,7 +755,7 @@ class MyLib(pya.Library):
     
     # Register us with the name "TestLib".
     # If a library with that name already existed, it will be replaced then.
-    self.register("TestLib")
+    self.register("Nanomade")
 
 
 # Instantiate and register the library
