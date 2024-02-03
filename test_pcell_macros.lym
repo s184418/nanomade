@@ -35,16 +35,22 @@ class Create:
     Produce the defualt alignment marks and inserts it into the specified shapes.
 
     Parameters:
-    - shapes: The target shape container.
-    - a: The width of the lines of cross.
-    - b: the length of the cross's arms.
-    - c: The length of the converging portion of the alignment mark.
+    - shapes: 
+        The target shape container.
+    - a: Float (um)
+        The width of the lines of cross.
+    - b: Float (um)
+        The length of the cross's arms.
+    - c: Float (um)
+        The length of the converging portion of the alignment mark.
 
     Returns:
     None
     """
-    
+    # Define one arm and rotate 90deg 3 times
+    # Define a 90deg rotation
     t = pya.DTrans(1)
+    #Define points
     pts = []
     pts.append(pya.DPoint(0, 0)) 
     pts.append(pya.DPoint(c, a/2))
@@ -56,19 +62,23 @@ class Create:
     for j in range(3):
       for i in range(len(pts)-5, len(pts)):
         pts.append(pts[i] *t)
-      
+    # Insert a polygon in the shape using the points
     shapes.insert(pya.DSimplePolygon(pts))
     
     
   def bracket(shapes, line_width, width, transform=pya.DTrans(0, False, 0, 0)):
     """
-    Produce a bracket shape and insert it into the specified shapes.
+    Produce a bracket shape and insert it into the specified shapes container.
 
     Parameters:
-    - shapes: The target shape container.
-    - line_width: The width of the bracket lines.
-    - width: The overall width of the bracket.
-    - transform: The transformation to be applied to the bracket shape.
+    - shapes: 
+       The target shape container.
+    - line_width: Float (um)
+       The width of the bracket lines.
+    - width: Float (um)
+       The overall width of the bracket.
+    - transform: pya.DTrans, Optional
+       The transformation to be applied to the bracket shape.
 
     Returns:
     None
@@ -76,7 +86,7 @@ class Create:
     gap = line_width
     t = pya.DTrans(1)
 
-    # Define the bracket points
+    # Define the bracket points for one arm
     bracket_points = [
         pya.DPoint(line_width / 2 + gap, line_width / 2 + gap),
         pya.DPoint(width / 2, line_width / 2 + gap),
@@ -89,7 +99,7 @@ class Create:
     # Create the bracket shape
     bracket_shape = pya.DSimplePolygon(bracket_points)
 
-    # Insert the bracket shape into the specified shapes with the provided transformation
+    # Insert the bracket arm into the specified shapes with the provided transformation, then rotate 90deg
     for _ in range(4):
         shapes.insert(bracket_shape.transformed(transform))
         bracket_shape = bracket_shape.transformed(t)
@@ -101,10 +111,14 @@ class Create:
     Produce a cross shape and insert it into the specified shapes.
 
     Parameters:
-    - shapes: The target shape container.
-    - line_width: The width of the cross lines.
-    - width: The overall width of the cross.
-    - transform: The transformation to be applied to the cross shape. Default is none
+    - shapes: 
+        The target shape container.
+    - line_width: Float (um)
+        The width of the cross lines.
+    - width: Float (um)
+        The overall width of the cross.
+    - transform: pya.DTrans, optional
+        The transformation to be applied to the cross shape. Default is none
 
     Returns:
     None
@@ -140,14 +154,22 @@ class Create:
     Produce a hallbar and insert it into the specified shapes.
 
     Parameters:
-    - shapes: The target shape container.
-    - side_contact_gap: The distance in um between the edge of one side contact and another
-    - side_contact_length: The length of the side contacts in um
-    - side_contact_width: The width of the side contacts in um
-    - main_contact_length: The length in um of the main contacts measured from the end of the side contacts.
-    - main_contact_width: The width in um of the main contacts
-    - transform: a transform that is applied to the structure when it is inserted into the shape
-    - n_side_contacts: The number of side contacts (is rounded down to nearest even number)
+    - shapes: 
+        The target shape container.
+    - side_contact_gap: Float (um)
+        The distance in um between the edge of one side contact and another
+    - side_contact_length: Float (um)
+        The length of the side contacts in um
+    - side_contact_width: Float (um)
+        The width of the side contacts in um
+    - main_contact_length: Float (um)
+        The length in um of the main contacts measured from the end of the side contacts.
+    - main_contact_width: Float (um)
+        The width in um of the main contacts
+    - transform: pya.DTrans, Optional
+        Transform that is applied to the structure when it is inserted into the shape
+    - n_side_contacts: int, Optional, default 4
+        The number of side contacts (is rounded down to nearest even number)
 
     Returns:
     None
