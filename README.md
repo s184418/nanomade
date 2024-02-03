@@ -1,29 +1,39 @@
 # Overview
-Klayout code to generate test structures for UV lithography fabrication of 2D materials.
+Klayout code to generate test structures for UV lithography fabrication of 2D materials. 
 
-***Patterns include:***
-- Tests
+## Available patterns
+- **Tests:**
   - A siemens star for resolution tests
   - Parallel lines
   - A spiral
   - A ruler pattern
   - A vernier ruler
   - A alignment mark using vernier rulers
-- Devices:
+- **Devices:**
   - Hallbars
   - Lines of increasing length
-  - Van der Pouw 
+  - Van der Pouw
+ 
+## Installation 
+- Clone the github repo to a folder on your computor.
+- Open Klayout
+- Press **F5** to enter the macrodevelopment window
+- Navigate to the **python tab** in the left menu bar
+- Right click in the menu bar and choose **add location**
+- Navigate to the folder with the cloned repo and add it
+- Click on the file `test_pcell_macros`
+- Run the file by pressing F5 or by clicking on on the greeen arrow
 
+## Use 
+- To add a PCell from the library, click **Instance** in the main Klayout menu
+- Select the library `Nanomade Test Patterns` in the instance tab under Editor Options
+- Click the magnifying glass next underneath and select the PCell you want to insert
+- Click on the PCell tab under editor options and select the Layer and parameters to use
+- Click on the layout to insert the PCell at that position
+
+- 
 # PCells
-Parametrized Cells (PCells) are a set of classes that can be instantiated from the Klayout menu. They can produce patterns based a set of input parameters.
-
-
-## Layout
-
-
-
-
-
+Parametrized Cells (PCells) are a set of classes that can be instantiated from the Klayout menu. They can produce patterns based a set of input parameters. 
 
 
 ## siemens star
