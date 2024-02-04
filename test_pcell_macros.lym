@@ -221,6 +221,29 @@ class Create:
 
 
   def lines(shapes, d0, dd, h, w0, dw, n):
+"""
+    Produce lines of a given height (h) and varying length and inserts it into the specified shapes.
+
+    Parameters:
+    - shapes: 
+        The target shape container.
+    - d0: Float (um)
+        The initial spacing between lines 
+    - dd: Float (um)
+        The increment by which the spacing increases each iteration 
+    - h: Float (um)
+        The height of the lines 
+    - d0: Float (um)
+        The initial width lines 
+    - dd: Float (um)
+        The increment by which the width of the lines increases each iteration
+    - h: int
+        The number of lines
+
+
+    Returns:
+    None
+    """
     x = 0
     d = d0
     w = w0
@@ -233,6 +256,20 @@ class Create:
 
     
   def siemens_star(shape, n, ru):
+"""
+    Produce a Siemens star for resolution tests and inserts it into the specified shapes.
+
+    Parameters:
+    - shapes: 
+        The target shape container.
+    - n: int
+        The number of spokes
+    - ru: Float (um)
+        The radius of the Siemens star
+
+    Returns:
+    None
+    """
     # This is the main part of the implementation: create the layout
     verts  = n * 2
     # compute the Siemens_star
@@ -250,8 +287,31 @@ class Create:
       
 
   def text(shape = None, dbu = 0.001, string = "missing text", text_width = 100, x = 0, y = 0):
-    #text_width: width of the text in um
-    # might give error if text width equals 0
+"""
+    Produce text and inserts it into the specified shapes. 
+
+Had to be implemented in a strange way due to a bug in Klayout's code. May break with future updates. 
+
+    Parameters:
+    - shapes: 
+        The target shape container.
+    - dbu: Float, optional 
+        The database unit of the layout
+    - string: str, optional
+        The text to add
+    - text_width: Float (um)
+        Width of the text in um, might give error if text width equals 0
+    - x: Float (um), optional 
+        x shift of the text
+    - y: Float (um), optional
+        y shift of the text
+
+
+
+    Returns:
+    None
+    """
+
     if shape == None:
       print("No shape provided") 
       return
@@ -264,6 +324,30 @@ class Create:
     shape.insert(text)
       
   def vernier(shapes, spacing, width, height, n, transform, mark_center):
+   """
+    Produce one side of a Vernier scale and inserts it into the specified shapes.
+
+    Parameters:
+    - shapes: 
+        The target shape container.
+    - spacing: Float (um)
+        The spacing between the tick marks (center-to-center)
+    - width: Float (um)
+        The width of the tick marks 
+    - height: Float (um)
+        The height of the tick marks
+    - n: int
+        The number of tick marks
+    - transform: pya.DTrans 
+        Transform that is applied to the structure when it is inserted into the shape
+    - mark_center: bool
+        Whether to mark the center tick by making it twice as tall, only if n is an odd number.
+
+
+    Returns:
+    None
+    """
+
     x = - (spacing*(n-1) + width)/2 
     for i in range(n):
       box = pya.DBox(x, -height/2, x + width ,height/2)
@@ -277,6 +361,35 @@ class Create:
     
      
   def vernier_align(shapes1,shapes2, msd, lc, line_width, line_height, overlap, n, mark_center, center_cross = False):
+
+   """
+    Produce a alignment mark with Vernier calipers on all sides and inserts it into the specified shapes.
+
+    Parameters:
+    - shapes1: 
+        The first target shape container. Contains the center alignment mark with the main scale 
+    - shapes2: 
+        The second target shape container. Contains the outer alignment mark with the Vernier scale
+    - msd: Float (um)
+        The main scale devision 
+    - lc: Float (um)
+        The least count, the resolution of the Vernier scale
+    - line_width: Float (um)
+        The width of the tick marks 
+    - line_height: Float (um)
+        The height of the tick marks
+    - n: int
+        The number of tick marks
+    - overlap: Float (um)
+        The overlap of the two scales
+    - mark_center: bool
+        Whether make the center tick of the scales longer
+    - mark_center: bool
+        Whether to make the center of the alignment make with a cross and a bracket ( width = line_width, height = 2*line_height)   
+
+    Returns:
+    None
+    """
     vc = msd - lc
     width = (n + 2) * msd 
     rotate = pya.DTrans(1,False, 0,0)
@@ -297,6 +410,27 @@ class Create:
     
     
   def ruler(th, tw, lw,length,d,major):
+"""
+    Produce a ruler with defined distances between ticks and returns a simple polygon  
+
+    Parameters:
+    - th: Float (um)
+        The height of the ticks
+    - tw: Float (um)
+        The width of the ticks
+    - lw: Float (um)
+        The width of the line connecting the ticks (ruler base)
+    - length: Float (um)
+        The length of the ruler
+    - d: Float (um)
+        The distance between ticks (center-to-center)
+    - major: int
+        The number of minor ticks between major ticks, e.g. every 10th tick is taller
+
+    Returns:
+    pya.DSimplePolygon
+    """
+
     n_teeth = int(length / d)
     x0 = - (length + d)/2
     x = x0
@@ -335,7 +469,7 @@ class Create:
 
 class Align_default(pya.PCellDeclarationHelper):
   """
-  The PCell declaration for the Siemens_star
+  The PCell declaration for the default alignment mark
   """
 
   def __init__(self):
@@ -390,7 +524,7 @@ class Align_default(pya.PCellDeclarationHelper):
 
 class HallBar(pya.PCellDeclarationHelper):
   """
-  The PCell declaration for the Vernier
+  The PCell declaration for the hall bar
   """
 
   def __init__(self):
@@ -690,7 +824,7 @@ class Vernier(pya.PCellDeclarationHelper):
       
 class VernierAlign(pya.PCellDeclarationHelper):
   """
-  The PCell declaration for the Vernier
+  The PCell declaration for the Vernier alignment mark
   """
 
   def __init__(self):
