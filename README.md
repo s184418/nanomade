@@ -32,7 +32,8 @@ Klayout code to generate test structures for UV lithography fabrication of 2D ma
 - Click on the layout to insert the PCell at that position
 
 # PCells
-Parametrized Cells (PCells) are a set of classes that can be instantiated from the Klayout menu. They can produce patterns based a set of input parameters. The PCells are defined in the file `test_pcell_macros`. Each PCell is defined as a class in the library `Nanomade Test Patterns` and takes in a set of parameters. The PCells then call the functions in the ```Python Create``` class
+Parametrized Cells (PCells) are a set of classes that can be instantiated from the Klayout menu. They can produce patterns based a set of input parameters. The PCells are defined in the file `test_pcell_macros`. Each PCell is defined as a class in the library `Nanomade Test Patterns` and takes in a set of parameters. The PCells then call the build functions in the `Create` class.
+
 ## siemens star
 A resolution test that is comprised of n identical triangles spaced equidistant around a central point
 
