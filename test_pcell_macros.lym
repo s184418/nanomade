@@ -911,7 +911,7 @@ class MyLib(pya.Library):
     
     # Register us with the name "TestLib".
     # If a library with that name already existed, it will be replaced then.
-    self.register("Nanomade")
+    self.register("TestLib")
 
 
 # Instantiate and register the library
