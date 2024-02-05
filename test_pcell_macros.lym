@@ -509,8 +509,8 @@ class Align_default(pya.PCellDeclarationHelper):
     
     msd_list = [200,100,40,20,10]
     lc_list = [20,10,4,2,1]
-    line_width_list = D#  [40,20,8,4,2]
-    line_height_list = A #[200,100,40,20,10]
+    line_width_list = D
+    line_height_list = A 
     overlap_list = [100,50,20,10,5]
     #n_list = [21,21,21,21,21]
     if self.label is not None:
