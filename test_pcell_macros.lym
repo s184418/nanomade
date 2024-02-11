@@ -28,8 +28,6 @@ are used to instantiate a number of alignment patterns and device.
 """
 
 class Create: 
-    
-      
   def align(shapes,a,b,c):
     """
     Produce the defualt alignment marks and inserts it into the specified shapes.
@@ -48,6 +46,7 @@ class Create:
     None
     """
     # Define one arm and rotate 90deg 3 times
+    
     # Define a 90deg rotation
     t = pya.DTrans(1)
     #Define points
@@ -221,7 +220,8 @@ class Create:
 
 
   def lines(shapes, d0, dd, h, w0, dw, n):
-"""
+
+    """
     Produce lines of a given height (h) and varying length and inserts it into the specified shapes.
 
     Parameters:
@@ -256,7 +256,7 @@ class Create:
 
     
   def siemens_star(shape, n, ru):
-"""
+    """
     Produce a Siemens star for resolution tests and inserts it into the specified shapes.
 
     Parameters:
@@ -287,7 +287,7 @@ class Create:
       
 
   def text(shape = None, dbu = 0.001, string = "missing text", text_width = 100, x = 0, y = 0):
-"""
+    """
     Produce text and inserts it into the specified shapes. 
 
 Had to be implemented in a strange way due to a bug in Klayout's code. May break with future updates. 
@@ -324,7 +324,7 @@ Had to be implemented in a strange way due to a bug in Klayout's code. May break
     shape.insert(text)
       
   def vernier(shapes, spacing, width, height, n, transform, mark_center):
-   """
+    """
     Produce one side of a Vernier scale and inserts it into the specified shapes.
 
     Parameters:
@@ -361,8 +361,7 @@ Had to be implemented in a strange way due to a bug in Klayout's code. May break
     
      
   def vernier_align(shapes1,shapes2, msd, lc, line_width, line_height, overlap, n, mark_center, center_cross = False):
-
-   """
+    """
     Produce a alignment mark with Vernier calipers on all sides and inserts it into the specified shapes.
 
     Parameters:
@@ -410,7 +409,7 @@ Had to be implemented in a strange way due to a bug in Klayout's code. May break
     
     
   def ruler(th, tw, lw,length,d,major):
-"""
+    """
     Produce a ruler with defined distances between ticks and returns a simple polygon  
 
     Parameters:
