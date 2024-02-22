@@ -1,21 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<klayout-macro>
- <description/>
- <version/>
- <category>pymacros</category>
- <prolog/>
- <epilog/>
- <doc/>
- <autorun>true</autorun>
- <autorun-early>false</autorun-early>
- <priority>0</priority>
- <shortcut/>
- <show-in-menu>false</show-in-menu>
- <group-name/>
- <menu-path/>
- <interpreter>python</interpreter>
- <dsl-interpreter-name/>
- <text>import pya
+import pya
 import math
 
 
@@ -233,11 +216,11 @@ class Create:
         The increment by which the spacing increases each iteration 
     - h: Float (um)
         The height of the lines 
-    - d0: Float (um)
+    - w0: Float (um)
         The initial width lines 
-    - dd: Float (um)
+    - dw: Float (um)
         The increment by which the width of the lines increases each iteration
-    - h: int
+    - n: int
         The number of lines
 
 
@@ -253,7 +236,227 @@ class Create:
       d = d + dd 
       
       w = w + dw
+      
+  def lines_triangle_hats(shapes, d0, dd, h, w0, dw, n, th):    
+  
+    """
+    Produce lines of a given height (h), a triangle on top of height th, and varying length and inserts it into the specified shapes.
 
+    Parameters:
+    - shapes: 
+        The target shape container.
+    - d0: Float (um)
+        The initial spacing between lines 
+    - dd: Float (um)
+        The increment by which the spacing increases each iteration 
+    - h: Float (um)
+        The height of the lines 
+    - w0: Float (um)
+        The initial width lines 
+    - dw: Float (um)
+        The increment by which the width of the lines increases each iteration
+    - n: int
+        The number of lines
+    - th: int
+        The height of the triangle tip above the rectangle
+
+
+    Returns:
+    None
+    """
+  
+    x = 0
+    d = d0
+    w = w0
+    
+    
+    for i in range(0, n):
+      pts = []
+      pts.append(pya.DPoint(x, 0))
+      pts.append(pya.DPoint(x, h))
+      pts.append(pya.DPoint(x + w / 2, h + th))
+      pts.append(pya.DPoint(x + w, h))
+      pts.append(pya.DPoint(x + w, 0))
+      shapes.insert(pya.DPolygon(pts))
+      
+      x = x + d + w
+      d = d + dd 
+      w = w + dw
+
+  def lines_arc_hats(shapes, d0, dd, h, w0, dw, n, np):   
+  
+    
+    """
+    Produce lines of a given height (h), an arc on top of with resolution np, and varying length and inserts it into the specified shapes.
+
+    Parameters:
+    - shapes: 
+        The target shape container.
+    - d0: Float (um)
+        The initial spacing between lines 
+    - dd: Float (um)
+        The increment by which the spacing increases each iteration 
+    - h: Float (um)
+        The height of the lines 
+    - w0: Float (um)
+        The initial width lines 
+    - dw: Float (um)
+        The increment by which the width of the lines increases each iteration
+    - n: int
+        The number of lines
+    - np: int
+        The resolution of the arc on top of each line
+        
+    Returns:
+    None
+    """
+   
+    x = 0
+    d = d0
+    w = w0
+    pi = math.pi
+    
+    for i in range(0, n):
+      pts = []
+      pts.append(pya.DPoint(x, 0))
+      pts.append(pya.DPoint(x + w, 0))
+      pts.append(pya.DPoint(x + w, h))
+      for i in range(0, np):
+        pts.append(pya.DPoint(x + w / 2 + math.cos(pi * i / np) * w / 2, h + math.sin(pi * i / np) * w / 2))
+      
+      pts.append(pya.DPoint(x, h))
+      shapes.insert(pya.DPolygon(pts))
+      
+      x = x + d + w
+      d = d + dd 
+      w = w + dw
+      
+      
+      
+  def concentric_circles(shapes, n, w, d, np):
+    """
+    *** High number of circles with high resolution will be slow to calculate ***
+    Produce  number (n) of concentric "donuts" of a given width (w), spacing (d), with resolution (np) and inserts it into the specified shapes.
+
+    Parameters:
+    - shapes: 
+        The target shape container.
+    - w: Float (um)
+        The initial width of the "donuts"
+    - n: int
+        The number of donuts
+    - d: Float (um)
+        The spacing between the donuts
+    - np: int
+        The resolution of the donuts 
+        
+    Returns:
+    None
+    """
+  
+    r_int = 0
+    r_ext = w
+    for i in range(0, n):
+      pts = []
+      for i in range(0, np + 1):
+        pts.append(pya.DPoint(r_ext * math.sin(2 * math.pi * i / np), r_ext * math.cos(2 * math.pi * i/ np)))
+      for i in range(np, -1, -1):
+        print(i)
+        pts.append(pya.DPoint(r_int * math.sin(2 * math.pi * i / np), r_int * math.cos(2 * math.pi * i / np)))
+      shapes.insert(pya.DPolygon(pts))
+      r_int = r_int + w + d
+      r_ext = r_ext + w + d
+      
+  def concentric_squares(shapes, n, w, d):
+  
+    """
+    Produce a number (n) of concentric square of a given width (w) and spacing (d) and inserts it into the specified shapes.
+
+    Parameters:
+    - shapes: 
+        The target shape container.
+    - w: Float (um)
+        The initial width of the square
+    - n: int
+        The number of squares
+    - d: Float (um)
+        The spacing between the squares
+        
+    Returns:
+    None
+    """
+    
+    y_0 = 0
+    y_1 = w / 2
+    y_2 = w / 2
+    y_3 = -w / 2
+    y_4 = -w / 2
+    y_5 = 0
+    y_6 = 0
+    y_7 = -w / 2 - d
+    y_8 = -w / 2 - d
+    y_9 = w / 2 + d
+    y_10 = w / 2 + d
+    y_11 = 0
+    
+    x_0 = w / 2
+    x_1 = w / 2
+    x_2 = -w / 2
+    x_3 = -w / 2
+    x_4 = w / 2
+    x_5 = w / 2
+    x_6 = w / 2 + d
+    x_7 = w / 2 + d
+    x_8 = -w / 2 - d
+    x_9 = -w / 2 - d
+    x_10 = w / 2 + d
+    x_11 = w / 2 + d
+    
+    for i in range(0, n):
+      pts = []
+      pts.append(pya.DPoint(x_0, y_0))
+      pts.append(pya.DPoint(x_1, y_1))
+      pts.append(pya.DPoint(x_2, y_2))
+      pts.append(pya.DPoint(x_3, y_3))
+      pts.append(pya.DPoint(x_4, y_4))
+      pts.append(pya.DPoint(x_5, y_5))
+      pts.append(pya.DPoint(x_6, y_6))
+      pts.append(pya.DPoint(x_7, y_7))
+      pts.append(pya.DPoint(x_8, y_8))
+      pts.append(pya.DPoint(x_9, y_9))
+      pts.append(pya.DPoint(x_10, y_10))
+      pts.append(pya.DPoint(x_11, y_11))
+      shapes.insert(pya.DPolygon(pts))
+      
+      y_0 = 0
+      y_1 = y_1 + w + d
+      y_2 = y_2 + w + d
+      y_3 = y_3 - w - d
+      y_4 = y_4 - w - d
+      y_5 = 0
+      y_6 = 0
+      y_7 = y_7 - w - d
+      y_8 = y_8 - w - d
+      y_9 = y_9 + w + d
+      y_10 = y_10 + w + d
+      y_11 = 0
+    
+      x_0 = x_0 + w + d
+      x_1 = x_1 + w + d
+      x_2 = x_2 - w - d
+      x_3 = x_3 - w - d
+      x_4 = x_4 + w + d
+      x_5 = x_5 + w + d
+      x_6 = x_6 + w + d
+      x_7 = x_7 + w + d
+      x_8 = x_8 - w - d
+      x_9 = x_9 - w - d
+      x_10 = x_10 + w + d
+      x_11 = x_11 + w + d
+      
+      
+            
+        
     
   def siemens_star(shape, n, ru):
     """
@@ -354,7 +557,7 @@ class Create:
       x = x + spacing
       shapes.insert(box.transformed(transform))
     
-    if (mark_center and n % 2 &gt; 0):
+    if (mark_center and n % 2 > 0):
       shapes.insert(pya.DBox(-width/2, -(height + width) , width/2, -(height/2 + width) ).transformed(transform))
 
     
@@ -587,8 +790,127 @@ class Lines(pya.PCellDeclarationHelper):
   def produce_impl(self):
     Create.lines(shapes = self.cell.shapes(self.l_layer), d0 = self.d0, dd = self.dd, h = self.h, w0 = self.w0, dw = self.dw, n = self.n)
     
+class Lines_Triangle_Hats(pya.PCellDeclarationHelper):
+  """
+  The PCell declaration for the Lines_Triangle_Hats
+  """
+
+  def __init__(self):
+
+    # Important: initialize the super class
+    super(Lines_Triangle_Hats, self).__init__()
+
+    # declare the parameters
+    self.param("l", self.TypeLayer, "Layer")
+    self.param("s", self.TypeShape, "", default = pya.DPoint(0, 0))
+    self.param("h", self.TypeDouble, "Height", default = 100)
+    self.param("w0", self.TypeDouble, "Initial Width", default = 10)
+    self.param("dw", self.TypeDouble, "Change in width", default = 0)
+    self.param("d0", self.TypeDouble, "Initial Spacing", default = 100)
+    self.param("dd", self.TypeDouble, "Change in spacing", default = 0)
+    self.param("n", self.TypeInt, "Number of lines", default = 10)     
+    self.param("th", self.TypeDouble, "Triangle Tip Height", default = 10)
+    # this hidden parameter is used to determine whether the radius has changed
+    # or the "s" handle has been moved
+    self.param("ru", self.TypeDouble, "Radius", default = 0.0, hidden = True)
+    self.param("rd", self.TypeDouble, "Double radius", readonly = True)
+
+  def display_text_impl(self):
+    # Provide a descriptive text for the cell
+    return "Lines(triangle hats) (L=" + str(self.l) + ",H=" + ('%.3f' % self.h) + ")"
+
+  def produce_impl(self):
+    Create.lines_triangle_hats(shapes = self.cell.shapes(self.l_layer), d0 = self.d0, dd = self.dd, h = self.h, w0 = self.w0, dw = self.dw, n = self.n, th = self.th)
+
+class Lines_Arc_Hats(pya.PCellDeclarationHelper):
+  """
+  The PCell declaration for the Lines_Arc_Hats
+  """
+
+  def __init__(self):
+
+    # Important: initialize the super class
+    super(Lines_Arc_Hats, self).__init__()
+
+    # declare the parameters
+    self.param("l", self.TypeLayer, "Layer")
+    self.param("s", self.TypeShape, "", default = pya.DPoint(0, 0))
+    self.param("h", self.TypeDouble, "Height", default = 100)
+    self.param("w0", self.TypeDouble, "Initial Width", default = 10)
+    self.param("dw", self.TypeDouble, "Change in width", default = 0)
+    self.param("d0", self.TypeDouble, "Initial Spacing", default = 100)
+    self.param("dd", self.TypeDouble, "Change in spacing", default = 0)
+    self.param("n", self.TypeInt, "Number of lines", default = 10)     
+    self.param("np", self.TypeInt, "Number of Arc Points", default = 32)
+    # this hidden parameter is used to determine whether the radius has changed
+    # or the "s" handle has been moved
+    self.param("ru", self.TypeDouble, "Radius", default = 0.0, hidden = True)
+    self.param("rd", self.TypeDouble, "Double radius", readonly = True)
+
+  def display_text_impl(self):
+    # Provide a descriptive text for the cell
+    return "Lines (arc hats) (L=" + str(self.l) + ",H=" + ('%.3f' % self.h) + ")"
+
+  def produce_impl(self):
+    Create.lines_arc_hats(shapes = self.cell.shapes(self.l_layer), d0 = self.d0, dd = self.dd, h = self.h, w0 = self.w0, dw = self.dw, n = self.n, np = self.np)
+
     
-    
+class Concentric_Circles(pya.PCellDeclarationHelper):
+  """
+  The PCell declaration for the Lines_Arc_Hats
+  """
+
+  def __init__(self):
+
+    # Important: initialize the super class
+    super(Concentric_Circles, self).__init__()
+
+    # declare the parameters
+    self.param("l", self.TypeLayer, "Layer")
+    self.param("s", self.TypeShape, "", default = pya.DPoint(0, 0))
+    self.param("n", self.TypeInt, "Number of circles", default = 10)
+    self.param("w", self.TypeDouble, "Line width", default = 10)
+    self.param("d", self.TypeDouble, "Spacing", default = 10)  
+    self.param("np", self.TypeInt, "Number of arc points", default = 64)
+    # this hidden parameter is used to determine whether the radius has changed
+    # or the "s" handle has been moved
+    self.param("ru", self.TypeDouble, "Radius", default = 0.0, hidden = True)
+    self.param("rd", self.TypeDouble, "Double radius", readonly = True)
+
+  def display_text_impl(self):
+    # Provide a descriptive text for the cell
+    return "Circles (d=" + str(self.d) + ",W=" + ('%.3f' % self.w) + ")"
+
+  def produce_impl(self):
+    Create.concentric_circles(shapes = self.cell.shapes(self.l_layer), n = self.n, w = self.w, d = self.d, np = self.np)
+
+class Concentric_Squares(pya.PCellDeclarationHelper):
+  """
+  The PCell declaration for the Lines_Arc_Hats
+  """
+
+  def __init__(self):
+
+    # Important: initialize the super class
+    super(Concentric_Squares, self).__init__()
+
+    # declare the parameters
+    self.param("l", self.TypeLayer, "Layer")
+    self.param("s", self.TypeShape, "", default = pya.DPoint(0, 0))
+    self.param("n", self.TypeInt, "Number of squares", default = 10)
+    self.param("w", self.TypeDouble, "Line width", default = 10)
+    self.param("d", self.TypeDouble, "Spacing", default = 10)  
+    # this hidden parameter is used to determine whether the radius has changed
+    # or the "s" handle has been moved
+    self.param("ru", self.TypeDouble, "Radius", default = 0.0, hidden = True)
+    self.param("rd", self.TypeDouble, "Double radius", readonly = True)
+
+  def display_text_impl(self):
+    # Provide a descriptive text for the cell
+    return "Squares (d=" + str(self.d) + ",W=" + ('%.3f' % self.w) + ")"
+
+  def produce_impl(self):
+    Create.concentric_squares(shapes = self.cell.shapes(self.l_layer), n = self.n, w = self.w, d = self.d)
     
 
 class Siemens_star(pya.PCellDeclarationHelper):
@@ -625,7 +947,7 @@ class Siemens_star(pya.PCellDeclarationHelper):
     if isinstance(self.s, pya.DPoint): 
       # compute distance in micron
       rs = self.s.distance(pya.DPoint(0, 0))
-    if rs != None and abs(self.r-self.ru) &lt; 1e-6:
+    if rs != None and abs(self.r-self.ru) < 1e-6:
       self.ru = rs
       self.r = rs 
     else:
@@ -714,7 +1036,7 @@ class Spiral(pya.PCellDeclarationHelper):
     dr = (self.width + self.spacing)/self.n/self.layout.dbu
     current_radius = inner_r_dbu
     current_angle = 0
-    while current_radius &lt; outer_r_dbu:
+    while current_radius < outer_r_dbu:
       pts.append(pya.Point.from_dpoint(pya.DPoint(current_radius * math.cos(current_angle) , current_radius * math.sin(current_angle))))
       current_radius += dr
       current_angle = (current_angle + da)%(math.pi*2)
@@ -906,6 +1228,10 @@ class MyLib(pya.Library):
     self.layout().register_pcell("VernierAlign", VernierAlign())
     self.layout().register_pcell("HallBar", HallBar())
     self.layout().register_pcell("Write_area", Write_area())
+    self.layout().register_pcell("Lines_Triangle_Hats", Lines_Triangle_Hats())
+    self.layout().register_pcell("Lines_Arc_Hats", Lines_Arc_Hats())
+    self.layout().register_pcell("Concentric_Circles", Concentric_Circles())
+    self.layout().register_pcell("Concentric_Squares", Concentric_Squares())
     # That would be the place to put in more PCells ...
     
     # Register us with the name "TestLib".
@@ -915,5 +1241,3 @@ class MyLib(pya.Library):
 
 # Instantiate and register the library
 MyLib()
-</text>
-</klayout-macro>
