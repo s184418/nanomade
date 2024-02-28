@@ -1,22 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <klayout-macro>
-<description/>
-<version/>
-<category>pymacros</category>
-<prolog/>
-<epilog/>
-<doc/>
-<autorun>true</autorun>
-<autorun-early>false</autorun-early>
-<priority>0</priority>
-<shortcut/>
-<show-in-menu>false</show-in-menu>
-<group-name/>
-<menu-path/>
-<interpreter>python</interpreter>
-<dsl-interpreter-name/>
-<text>
-import pya
+ <description/>
+ <version/>
+ <category>pymacros</category>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>true</autorun>
+ <autorun-early>false</autorun-early>
+ <priority>0</priority>
+ <shortcut/>
+ <show-in-menu>false</show-in-menu>
+ <group-name/>
+ <menu-path/>
+ <interpreter>python</interpreter>
+ <dsl-interpreter-name/>
+ <text>import pya
 import math
 
 
@@ -575,7 +574,7 @@ class Create:
       x = x + spacing
       shapes.insert(box.transformed(transform))
     
-    if (mark_center and n % 2 > 0):
+    if (mark_center and n % 2 &gt; 0):
       shapes.insert(pya.DBox(-width/2, -(height + width) , width/2, -(height/2 + width) ).transformed(transform))
 
     
@@ -965,7 +964,7 @@ class Siemens_star(pya.PCellDeclarationHelper):
     if isinstance(self.s, pya.DPoint): 
       # compute distance in micron
       rs = self.s.distance(pya.DPoint(0, 0))
-    if rs != None and abs(self.r-self.ru) < 1e-6:
+    if rs != None and abs(self.r-self.ru) &lt; 1e-6:
       self.ru = rs
       self.r = rs 
     else:
@@ -1054,7 +1053,7 @@ class Spiral(pya.PCellDeclarationHelper):
     dr = (self.width + self.spacing)/self.n/self.layout.dbu
     current_radius = inner_r_dbu
     current_angle = 0
-    while current_radius < outer_r_dbu:
+    while current_radius &lt; outer_r_dbu:
       pts.append(pya.Point.from_dpoint(pya.DPoint(current_radius * math.cos(current_angle) , current_radius * math.sin(current_angle))))
       current_radius += dr
       current_angle = (current_angle + da)%(math.pi*2)
@@ -1258,6 +1257,5 @@ class MyLib(pya.Library):
 
 
 # Instantiate and register the library
-MyLib()
-</text>
+MyLib()</text>
 </klayout-macro>
